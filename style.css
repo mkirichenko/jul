@@ -1,0 +1,73 @@
+/* Styles for Test Suites Dashboard */
+
+body {
+  font-family: sans-serif;
+  padding: 20px;
+  background-color: #f4f4f4;
+  color: #333;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #2c3e50;
+}
+
+#search-container {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+#search-bar {
+  width: 50%;
+  padding: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box; /* So padding doesn't increase width */
+}
+
+#entity-list-container {
+  margin-top: 20px;
+}
+
+.entity-item {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.entity-item p {
+  margin: 5px 0;
+}
+
+.entity-id {
+  font-weight: bold;
+  font-size: 1.1em;
+  color: #3498db;
+}
+
+.entity-name {
+  font-weight: bold;
+  font-size: 1.2em;
+  margin-bottom: 10px !important; /* Add more space below name */
+}
+
+/* Status-specific styling */
+.status-passed {
+  color: #2ecc71; /* Green */
+  font-weight: bold;
+}
+
+.status-failed {
+  color: #e74c3c; /* Red */
+  font-weight: bold;
+}
+
+.status-running {
+  color: #f39c12; /* Orange */
+  font-weight: bold;
+}
