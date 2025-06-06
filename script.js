@@ -52,9 +52,10 @@ function displayEntities(entityArray) {
     idPara.textContent = `ID: ${entity.id}`;
     entityDiv.appendChild(idPara);
 
-    const namePara = document.createElement('p');
-    namePara.textContent = `Name: ${entity.name}`;
-    entityDiv.appendChild(namePara);
+    const nameLink = document.createElement('a');
+    nameLink.href = `entity.html?id=${entity.id}`;
+    nameLink.textContent = `Name: ${entity.name}`;
+    entityDiv.appendChild(nameLink);
 
     const versionPara = document.createElement('p');
     versionPara.textContent = `Version: ${entity.version}`;

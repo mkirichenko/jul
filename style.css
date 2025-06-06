@@ -71,3 +71,42 @@ h1 {
   color: #f39c12; /* Orange */
   font-weight: bold;
 }
+
+/* Styles for entity.html */
+h2 {
+  color: #34495e;
+  margin-top: 30px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #bdc3c7;
+  padding-bottom: 5px;
+}
+
+#previous-test-runs-list {
+  list-style-type: square;
+  margin-left: 20px;
+  padding-left: 10px;
+  background-color: #ffffff;
+  border: 1px solid #eeeeee;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+#previous-test-runs-list li {
+  margin-bottom: 8px;
+  padding: 5px;
+  border-bottom: 1px dashed #f0f0f0;
+}
+
+#previous-test-runs-list li:last-child {
+  border-bottom: none;
+}
+
+#current-test-status {
+  font-weight: bold;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #e9ecef;
+  border-left: 4px solid #7f8c8d;
+  border-radius: 4px;
+}
