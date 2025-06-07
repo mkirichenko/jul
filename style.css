@@ -81,20 +81,28 @@ h2 {
   padding-bottom: 5px;
 }
 
+/* Styling for .run-card, adapted from .entity-item */
+.run-card {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Adjustments for elements that will use .run-card */
 #previous-test-runs-list {
-  list-style-type: square;
-  margin-left: 20px;
-  padding-left: 10px;
-  background-color: #ffffff;
-  border: 1px solid #eeeeee;
-  padding: 10px;
-  border-radius: 4px;
+  list-style-type: none; /* Remove list bullets */
+  padding-left: 0; /* Remove default padding for ul */
+  /* Remove background/border as individual items will be cards */
 }
 
 #previous-test-runs-list li {
-  margin-bottom: 8px;
-  padding: 5px;
-  border-bottom: 1px dashed #f0f0f0;
+  /* Styles moved to .run-card, remove li-specific styling that conflicts */
+  /* margin-bottom will be handled by .run-card */
+  /* padding will be handled by .run-card */
+  border-bottom: none; /* Remove individual item borders if cards have their own */
 }
 
 #previous-test-runs-list li:last-child {
@@ -102,11 +110,20 @@ h2 {
 }
 
 #current-test-status {
-  font-weight: bold;
-  margin-top: 10px;
-  margin-bottom: 20px;
-  padding: 10px;
-  background-color: #e9ecef;
-  border-left: 4px solid #7f8c8d;
-  border-radius: 4px;
+  /* Existing styles will be augmented by .run-card. */
+  /* font-weight: bold; is fine */
+  /* margin-top, margin-bottom will be affected by .run-card, ensure consistency */
+  /* padding will be handled by .run-card, can remove specific padding here if it conflicts */
+  /* background-color will be overridden by .run-card */
+  /* border-left might be desired or might conflict, for now, we keep it and see */
+  font-weight: bold; /* Keep this for emphasis */
+  /* border-left: 4px solid #7f8c8d; */ /* Let's remove this to simplify, card border is enough */
+  /* background-color: #e9ecef; will be overridden by .run-card's #fff */
+}
+
+
+h1#page-title {
+  text-align: center;
+  color: #2c3e50; /* Match existing h1 style from index.html for consistency */
+  margin-bottom: 20px; /* Add some space below the title */
 }
