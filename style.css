@@ -127,3 +127,66 @@ h1#page-title {
   color: #2c3e50; /* Match existing h1 style from index.html for consistency */
   margin-bottom: 20px; /* Add some space below the title */
 }
+
+/* Styles for test_run.html */
+.test-list-container {
+  margin-top: 20px;
+}
+
+.test-list {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.test-item {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.test-name {
+  font-weight: bold;
+}
+
+.test-result {
+  font-weight: bold;
+  padding: 3px 6px;
+  border-radius: 3px;
+  color: white;
+}
+
+.test-result.pass {
+  background-color: #2ecc71; /* Green */
+}
+
+.test-result.fail {
+  background-color: #e74c3c; /* Red */
+}
+
+.spoiler-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  margin-left: 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.spoiler-button:hover {
+  background-color: #2980b9;
+}
+
+.test-details {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  white-space: pre-wrap; /* Preserve formatting of error messages */
+  font-family: monospace;
+}
