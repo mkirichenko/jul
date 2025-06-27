@@ -190,3 +190,21 @@ h1#page-title {
   white-space: pre-wrap; /* Preserve formatting of error messages */
   font-family: monospace;
 }
+
+/* Style for the test run link in index.html */
+.test-run-link {
+  display: block;
+  margin-top: 10px;
+  padding: 8px 0px; /* Adjusted padding to align with text */
+  background-color: #e9ecef;
+  color: #3498db;
+  text-decoration: none;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.test-run-link:hover {
+  background-color: #dfe4e8;
+  color: #2980b9;
+}

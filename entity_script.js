@@ -10,41 +10,47 @@ function getEntityIdFromUrl() {
 function fetchEntityData(entityId) {
     // Placeholder data - replace with actual API call
     console.log(`Simulating fetch for entity ID: ${entityId}`);
-    let entityName = "Unknown Entity"; // Default name
+    let entityName = "Unknown Entity";
+    let previousTestRuns = [
+        { runId: "RUN_DEF001", timestamp: "2023-10-26T10:00:00Z", status: "Passed", details: "All checks green." },
+        { runId: "RUN_DEF002", timestamp: "2023-10-25T14:30:00Z", status: "Failed", details: "Test 'user_login' failed." }
+    ];
+    let currentTestStatus = "No tests currently running.";
 
-    // Simulate fetching entity name based on ID
+    // Simulate fetching entity name and test runs based on ID
     if (entityId === "SER001") {
         entityName = "Service Alpha";
+        previousTestRuns = [
+            { runId: "RUN001SER", timestamp: "2023-10-01T10:00:00Z", status: "Passed", details: "All tests green." },
+            { runId: "RUN002SER", timestamp: "2023-09-28T11:00:00Z", status: "Passed", details: "Previous successful run." }
+        ];
     } else if (entityId === "LIB003") {
         entityName = "Library Beta";
-    } else if (entityId === "123") {
+        currentTestStatus = "Test 'auth_flow' in progress (ETA: 5 mins)";
+        previousTestRuns = [
+            { runId: "RUN003LIB", timestamp: "2023-10-02T12:00:00Z", status: "Failed", details: "Assertion failed in payment module." },
+            { runId: "RUN004LIB", timestamp: "2023-09-29T13:00:00Z", status: "Passed", details: "All library functions tested." },
+            { runId: "RUN_LIB_EXTRA", timestamp: "2023-09-27T15:00:00Z", status: "Passed", details: "Documentation examples verified." }
+        ];
+    } else if (entityId === "123") { // Assuming 123 is a string ID from URL, or it was stringified in index.html
         entityName = "Application Gamma";
+        currentTestStatus = "Load tests in progress (ETA: 10 mins)";
+        previousTestRuns = [
+            { runId: "RUN005APP", timestamp: "2023-10-03T14:00:00Z", status: "Running", details: "Load test phase 1." },
+            { runId: "RUN_APP_OLD", timestamp: "2023-09-30T16:00:00Z", status: "Failed", details: "Database connection timeout." }
+        ];
     } else if (entityId === "SER004") {
         entityName = "Service Delta";
+        previousTestRuns = [
+            { runId: "RUN006SER", timestamp: "2023-10-01T17:00:00Z", status: "Passed", details: "Deployment checks successful." }
+        ];
     }
 
-
-    const placeholderData = {
-        entityName: entityName, // Added entityName
-        previousTestRuns: [
-            { id: "run001", timestamp: "2023-10-26T10:00:00Z", status: "Passed", details: "All checks green." },
-            { id: "run002", timestamp: "2023-10-25T14:30:00Z", status: "Failed", details: "Test 'user_login' failed." },
-            { id: "run003", timestamp: "2023-10-24T09:00:00Z", status: "Passed", details: "Minor UI glitches fixed." }
-        ],
-        currentTestStatus: "No tests currently running."
+    return {
+        entityName: entityName,
+        previousTestRuns: previousTestRuns,
+        currentTestStatus: currentTestStatus
     };
-
-    if (entityId === "LIB003") { // Example of entity-specific data
-        placeholderData.currentTestStatus = "Test 'auth_flow' in progress (ETA: 5 mins)";
-        placeholderData.previousTestRuns.unshift(
-             { id: "run004", timestamp: "2023-10-27T11:00:00Z", status: "Running", details: "Initialising..." }
-        );
-    } else if (entityId === "123") {
-         placeholderData.currentTestStatus = "Load tests in progress (ETA: 10 mins)";
-    }
-
-
-    return placeholderData;
 }
 
 // Function to update the page with entity data
@@ -63,17 +69,26 @@ function displayEntityDetails(entityId, data) { // Added entityId parameter
     if (data.previousTestRuns && data.previousTestRuns.length > 0) {
         data.previousTestRuns.forEach(run => {
             const listItem = document.createElement('li');
-            listItem.classList.add('run-card'); // Add .run-card class to each list item
+            listItem.classList.add('run-card');
+
+            const link = document.createElement('a');
+            link.href = `test_run.html?runId=${run.runId}`; // Use run.runId
+            link.classList.add('run-link'); // Added class for styling if needed
+            link.style.textDecoration = 'none'; // Basic styling to make it look less like a default link
+            link.style.color = 'inherit';
+
             // You might want to structure content within the card more, e.g., with paragraphs or spans
-            listItem.innerHTML = `<strong>Run ID:</strong> ${run.id}<br>
-                                  <strong>Timestamp:</strong> ${run.timestamp}<br>
-                                  <strong>Status:</strong> ${run.status}<br>
+            link.innerHTML = `<strong>Run ID:</strong> ${run.runId}<br>  <!-- Use run.runId -->
+                                  <strong>Timestamp:</strong> ${new Date(run.timestamp).toLocaleString()}<br>
+                                  <strong>Status:</strong> <span class="status-${run.status.toLowerCase()}">${run.status}</span><br>
                                   <strong>Details:</strong> ${run.details}`;
+
+            listItem.appendChild(link);
             previousTestRunsList.appendChild(listItem);
         });
     } else {
         const listItem = document.createElement('li');
-        listItem.classList.add('run-card'); // Also style the "no runs found" message as a card
+        listItem.classList.add('run-card');
         listItem.textContent = "No previous test runs found.";
         previousTestRunsList.appendChild(listItem);
     }

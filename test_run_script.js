@@ -1,15 +1,40 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Mock data for a test run
-    const testRunData = {
-        runId: "Run123",
-        tests: [
-            { name: "Test Case 1", result: "Pass", details: "" },
-            { name: "Test Case 2", result: "Fail", details: "AssertionError: Expected true to be false." },
-            { name: "Test Case 3", result: "Pass", details: "" },
-            { name: "Test Case 4", result: "Fail", details: "NullPointerException: Attempted to access a null object." },
-            { name: "Test Case 5", result: "Pass", details: "" }
-        ]
+    // Function to parse runId from URL query parameter
+    function getRunIdFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('runId');
+    }
+
+    const runId = getRunIdFromUrl();
+
+    // Mock data - in a real app, you'd fetch this based on runId
+    const allTestRunData = {
+        "RUN001SER": {
+            runId: "RUN001SER",
+            tests: [
+                { name: "Authentication Test", result: "Pass", details: "" },
+                { name: "Data Validation Test", result: "Pass", details: "" }
+            ]
+        },
+        "RUN003LIB": {
+            runId: "RUN003LIB",
+            tests: [
+                { name: "Payment Module Test 1", result: "Fail", details: "AssertionError: Expected amount to be positive." },
+                { name: "Payment Module Test 2", result: "Pass", details: "" }
+            ]
+        },
+        // Add more mock data for other runIds as needed
+        "Run123": { // Default/fallback if no specific ID matches
+            runId: runId || "Run123", // Use parsed runId or default
+            tests: [
+                { name: "Default Test Case 1", result: "Pass", details: "" },
+                { name: "Default Test Case 2", result: "Fail", details: "AssertionError: Expected true to be false." },
+                { name: "Default Test Case 3", result: "Pass", details: "" }
+            ]
+        }
     };
+
+    const testRunData = allTestRunData[runId] || allTestRunData["Run123"]; // Fetch specific or default
 
     // Set the page title
     const pageTitle = document.getElementById('page-title');
@@ -19,6 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const testListContainer = document.getElementById('test-list-container');
     if (testListContainer) {
+        testListContainer.innerHTML = ''; // Clear any existing content
         const ul = document.createElement('ul');
         ul.className = 'test-list'; // Add a class for styling
 
