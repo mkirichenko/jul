@@ -46,10 +46,10 @@ const entities = [
     latest_tests_results: {
       status: "passed",
       details: "All checks passed successfully."
-    },
-    test_runs: [ // Added test_runs
+    }, // Added comma here
+    test_runs: [
       { runId: "RUN006SER", date: "2023-10-01", status: "passed" }
-    }
+    ]
   }
 ];
 
