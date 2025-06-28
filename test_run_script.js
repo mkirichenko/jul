@@ -1,3 +1,5 @@
+import { getTestRunDetails } from './src/dataService.js';
+
 document.addEventListener('DOMContentLoaded', function() {
     // Function to parse runId from URL query parameter
     function getRunIdFromUrl() {
@@ -6,35 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const runId = getRunIdFromUrl();
-
-    // Mock data - in a real app, you'd fetch this based on runId
-    const allTestRunData = {
-        "RUN001SER": {
-            runId: "RUN001SER",
-            tests: [
-                { name: "Authentication Test", result: "Pass", details: "" },
-                { name: "Data Validation Test", result: "Pass", details: "" }
-            ]
-        },
-        "RUN003LIB": {
-            runId: "RUN003LIB",
-            tests: [
-                { name: "Payment Module Test 1", result: "Fail", details: "AssertionError: Expected amount to be positive." },
-                { name: "Payment Module Test 2", result: "Pass", details: "" }
-            ]
-        },
-        // Add more mock data for other runIds as needed
-        "Run123": { // Default/fallback if no specific ID matches
-            runId: runId || "Run123", // Use parsed runId or default
-            tests: [
-                { name: "Default Test Case 1", result: "Pass", details: "" },
-                { name: "Default Test Case 2", result: "Fail", details: "AssertionError: Expected true to be false." },
-                { name: "Default Test Case 3", result: "Pass", details: "" }
-            ]
-        }
-    };
-
-    const testRunData = allTestRunData[runId] || allTestRunData["Run123"]; // Fetch specific or default
+    const testRunData = getTestRunDetails(runId); // Use dataService
 
     // Set the page title
     const pageTitle = document.getElementById('page-title');

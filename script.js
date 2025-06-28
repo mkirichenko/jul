@@ -1,57 +1,5 @@
 // JavaScript for Test Suites Dashboard
-
-const entities = [
-  {
-    id: "SER001",
-    name: "Service Alpha",
-    version: "1.0.2",
-    latest_tests_results: {
-      status: "passed",
-      details: "All tests green"
-    },
-    test_runs: [ // Added test_runs
-      { runId: "RUN001SER", date: "2023-10-01", status: "passed" },
-      { runId: "RUN002SER", date: "2023-09-28", status: "passed" }
-    ]
-  },
-  {
-    id: "LIB003",
-    name: "Library Beta",
-    version: "2.1.0",
-    latest_tests_results: {
-      status: "failed",
-      details: "3 tests failed: test_auth, test_payment, test_user_profile"
-    },
-    test_runs: [ // Added test_runs
-      { runId: "RUN003LIB", date: "2023-10-02", status: "failed" },
-      { runId: "RUN004LIB", date: "2023-09-29", status: "passed" }
-    ]
-  },
-  {
-    id: 123, // Keep as number to ensure string conversion for search works
-    name: "Application Gamma",
-    version: "0.9.5",
-    latest_tests_results: {
-      status: "running",
-      details: "Load tests in progress (ETA: 15 mins)"
-    },
-    test_runs: [ // Added test_runs
-      { runId: "RUN005APP", date: "2023-10-03", status: "running" }
-    ]
-  },
-  {
-    id: "SER004",
-    name: "Service Delta",
-    version: "1.1.0",
-    latest_tests_results: {
-      status: "passed",
-      details: "All checks passed successfully."
-    }, // Added comma here
-    test_runs: [
-      { runId: "RUN006SER", date: "2023-10-01", status: "passed" }
-    ]
-  }
-];
+import { getEntities } from './src/dataService.js';
 
 function displayEntities(entityArray) {
   const entityListContainer = document.getElementById('entity-list-container');
@@ -103,12 +51,14 @@ function displayEntities(entityArray) {
 
 // Display entities on page load
 document.addEventListener('DOMContentLoaded', () => {
+  const entities = getEntities(); // Fetch entities from dataService
   displayEntities(entities);
 
   const searchBar = document.getElementById('search-bar');
   searchBar.addEventListener('input', () => {
     const searchTerm = searchBar.value.toLowerCase();
-    const filteredEntities = entities.filter(entity => {
+    const baseEntities = getEntities(); // Fetch fresh copy for filtering
+    const filteredEntities = baseEntities.filter(entity => {
       return String(entity.id).toLowerCase().includes(searchTerm);
     });
     displayEntities(filteredEntities);
