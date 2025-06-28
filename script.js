@@ -8,7 +8,11 @@ const entities = [
     latest_tests_results: {
       status: "passed",
       details: "All tests green"
-    }
+    },
+    test_runs: [ // Added test_runs
+      { runId: "RUN001SER", date: "2023-10-01", status: "passed" },
+      { runId: "RUN002SER", date: "2023-09-28", status: "passed" }
+    ]
   },
   {
     id: "LIB003",
@@ -17,16 +21,23 @@ const entities = [
     latest_tests_results: {
       status: "failed",
       details: "3 tests failed: test_auth, test_payment, test_user_profile"
-    }
+    },
+    test_runs: [ // Added test_runs
+      { runId: "RUN003LIB", date: "2023-10-02", status: "failed" },
+      { runId: "RUN004LIB", date: "2023-09-29", status: "passed" }
+    ]
   },
   {
-    id: 123,
+    id: 123, // Keep as number to ensure string conversion for search works
     name: "Application Gamma",
     version: "0.9.5",
     latest_tests_results: {
       status: "running",
       details: "Load tests in progress (ETA: 15 mins)"
-    }
+    },
+    test_runs: [ // Added test_runs
+      { runId: "RUN005APP", date: "2023-10-03", status: "running" }
+    ]
   },
   {
     id: "SER004",
@@ -35,7 +46,10 @@ const entities = [
     latest_tests_results: {
       status: "passed",
       details: "All checks passed successfully."
-    }
+    }, // Added comma here
+    test_runs: [
+      { runId: "RUN006SER", date: "2023-10-01", status: "passed" }
+    ]
   }
 ];
 
@@ -70,6 +84,18 @@ function displayEntities(entityArray) {
     const detailsPara = document.createElement('p');
     detailsPara.textContent = `Details: ${entity.latest_tests_results.details}`;
     entityDiv.appendChild(detailsPara);
+
+    // Add link to the latest test run
+    if (entity.test_runs && entity.test_runs.length > 0) {
+      const latestRun = entity.test_runs.reduce((latest, current) => {
+        return new Date(current.date) > new Date(latest.date) ? current : latest;
+      });
+      const testRunLink = document.createElement('a');
+      testRunLink.href = `test_run.html?runId=${latestRun.runId}`;
+      testRunLink.textContent = `View Latest Test Run (${latestRun.runId})`;
+      testRunLink.classList.add('test-run-link'); // For styling
+      entityDiv.appendChild(testRunLink);
+    }
 
     entityListContainer.appendChild(entityDiv);
   });
