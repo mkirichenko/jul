@@ -12,3 +12,4 @@ Web app in JS without frameworks that shows test suites for different entities, 
 3.1. List of tests with results.
 3.2. Failed test results are hidden under spoiler and can be shown on click
 
+4. DataService
