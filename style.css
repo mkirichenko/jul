@@ -1,210 +1,209 @@
 /* Styles for Test Suites Dashboard */
 
 body {
-  font-family: sans-serif;
-  padding: 20px;
-  background-color: #f4f4f4;
-  color: #333;
+    font-family: sans-serif;
+    padding: 20px;
+    background-color: #f4f4f4;
+    color: #333;
 }
 
 h1 {
-  text-align: center;
-  margin-bottom: 30px;
-  color: #2c3e50;
+    text-align: center;
+    margin-bottom: 30px;
+    color: #2c3e50;
 }
 
 #search-container {
-  text-align: center;
-  margin-bottom: 20px;
+    text-align: center;
+    margin-bottom: 20px;
 }
 
 #search-bar {
-  width: 50%;
-  padding: 10px;
-  margin-bottom: 20px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box; /* So padding doesn't increase width */
+    width: 50%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* So padding doesn't increase width */
 }
 
 #entity-list-container {
-  margin-top: 20px;
+    margin-top: 20px;
 }
 
 .entity-item {
-  background-color: #fff;
-  border: 1px solid #ddd;
-  padding: 15px;
-  margin-bottom: 15px;
-  border-radius: 5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .entity-item p {
-  margin: 5px 0;
+    margin: 5px 0;
 }
 
 .entity-id {
-  font-weight: bold;
-  font-size: 1.1em;
-  color: #3498db;
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #3498db;
 }
 
 .entity-name {
-  font-weight: bold;
-  font-size: 1.2em;
-  margin-bottom: 10px !important; /* Add more space below name */
+    font-weight: bold;
+    font-size: 1.2em;
+    margin-bottom: 10px !important; /* Add more space below name */
 }
 
 /* Status-specific styling */
 .status-passed {
-  color: #2ecc71; /* Green */
-  font-weight: bold;
+    color: #2ecc71; /* Green */
+    font-weight: bold;
 }
 
 .status-failed {
-  color: #e74c3c; /* Red */
-  font-weight: bold;
+    color: #e74c3c; /* Red */
+    font-weight: bold;
 }
 
 .status-running {
-  color: #f39c12; /* Orange */
-  font-weight: bold;
+    color: #f39c12; /* Orange */
+    font-weight: bold;
 }
 
 /* Styles for entity.html */
 h2 {
-  color: #34495e;
-  margin-top: 30px;
-  margin-bottom: 15px;
-  border-bottom: 1px solid #bdc3c7;
-  padding-bottom: 5px;
+    color: #34495e;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #bdc3c7;
+    padding-bottom: 5px;
 }
 
 /* Styling for .run-card, adapted from .entity-item */
 .run-card {
-  background-color: #fff;
-  border: 1px solid #ddd;
-  padding: 15px;
-  margin-bottom: 15px;
-  border-radius: 5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Adjustments for elements that will use .run-card */
 #previous-test-runs-list {
-  list-style-type: none; /* Remove list bullets */
-  padding-left: 0; /* Remove default padding for ul */
-  /* Remove background/border as individual items will be cards */
+    list-style-type: none; /* Remove list bullets */
+    padding-left: 0; /* Remove default padding for ul */
+    /* Remove background/border as individual items will be cards */
 }
 
 #previous-test-runs-list li {
-  /* Styles moved to .run-card, remove li-specific styling that conflicts */
-  /* margin-bottom will be handled by .run-card */
-  /* padding will be handled by .run-card */
-  border-bottom: none; /* Remove individual item borders if cards have their own */
+    /* Styles moved to .run-card, remove li-specific styling that conflicts */
+    /* margin-bottom will be handled by .run-card */
+    /* padding will be handled by .run-card */
+    border-bottom: none; /* Remove individual item borders if cards have their own */
 }
 
 #previous-test-runs-list li:last-child {
-  border-bottom: none;
+    border-bottom: none;
 }
 
 #current-test-status {
-  /* Existing styles will be augmented by .run-card. */
-  /* font-weight: bold; is fine */
-  /* margin-top, margin-bottom will be affected by .run-card, ensure consistency */
-  /* padding will be handled by .run-card, can remove specific padding here if it conflicts */
-  /* background-color will be overridden by .run-card */
-  /* border-left might be desired or might conflict, for now, we keep it and see */
-  font-weight: bold; /* Keep this for emphasis */
-  /* border-left: 4px solid #7f8c8d; */ /* Let's remove this to simplify, card border is enough */
-  /* background-color: #e9ecef; will be overridden by .run-card's #fff */
+    /* Existing styles will be augmented by .run-card. */
+    /* font-weight: bold; is fine */
+    /* margin-top, margin-bottom will be affected by .run-card, ensure consistency */
+    /* padding will be handled by .run-card, can remove specific padding here if it conflicts */
+    /* background-color will be overridden by .run-card */
+    /* border-left might be desired or might conflict, for now, we keep it and see */
+    font-weight: bold; /* Keep this for emphasis */
+    /* border-left: 4px solid #7f8c8d; */ /* Let's remove this to simplify, card border is enough */
+    /* background-color: #e9ecef; will be overridden by .run-card's #fff */
 }
 
-
 h1#page-title {
-  text-align: center;
-  color: #2c3e50; /* Match existing h1 style from index.html for consistency */
-  margin-bottom: 20px; /* Add some space below the title */
+    text-align: center;
+    color: #2c3e50; /* Match existing h1 style from index.html for consistency */
+    margin-bottom: 20px; /* Add some space below the title */
 }
 
 /* Styles for test_run.html */
 .test-list-container {
-  margin-top: 20px;
+    margin-top: 20px;
 }
 
 .test-list {
-  list-style-type: none;
-  padding-left: 0;
+    list-style-type: none;
+    padding-left: 0;
 }
 
 .test-item {
-  background-color: #fff;
-  border: 1px solid #ddd;
-  padding: 15px;
-  margin-bottom: 10px;
-  border-radius: 5px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .test-name {
-  font-weight: bold;
+    font-weight: bold;
 }
 
 .test-result {
-  font-weight: bold;
-  padding: 3px 6px;
-  border-radius: 3px;
-  color: white;
+    font-weight: bold;
+    padding: 3px 6px;
+    border-radius: 3px;
+    color: white;
 }
 
 .test-result.pass {
-  background-color: #2ecc71; /* Green */
+    background-color: #2ecc71; /* Green */
 }
 
 .test-result.fail {
-  background-color: #e74c3c; /* Red */
+    background-color: #e74c3c; /* Red */
 }
 
 .spoiler-button {
-  background-color: #3498db;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  margin-left: 10px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 0.9em;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    margin-left: 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.9em;
 }
 
 .spoiler-button:hover {
-  background-color: #2980b9;
+    background-color: #2980b9;
 }
 
 .test-details {
-  margin-top: 10px;
-  padding: 10px;
-  background-color: #f9f9f9;
-  border: 1px solid #eee;
-  border-radius: 3px;
-  white-space: pre-wrap; /* Preserve formatting of error messages */
-  font-family: monospace;
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 3px;
+    white-space: pre-wrap; /* Preserve formatting of error messages */
+    font-family: monospace;
 }
 
 /* Style for the test run link in index.html */
 .test-run-link {
-  display: block;
-  margin-top: 10px;
-  padding: 8px 0px; /* Adjusted padding to align with text */
-  background-color: #e9ecef;
-  color: #3498db;
-  text-decoration: none;
-  border-radius: 4px;
-  text-align: center;
-  font-weight: bold;
+    display: block;
+    margin-top: 10px;
+    padding: 8px 0px; /* Adjusted padding to align with text */
+    background-color: #e9ecef;
+    color: #3498db;
+    text-decoration: none;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: bold;
 }
 
 .test-run-link:hover {
-  background-color: #dfe4e8;
-  color: #2980b9;
+    background-color: #dfe4e8;
+    color: #2980b9;
 }
