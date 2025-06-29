@@ -1,16 +1,17 @@
 /* Styles for Test Suites Dashboard */
 
 body {
-    font-family: sans-serif;
+    font: var(--tui-font-text-m); /* Taiga UI default body font */
     padding: 20px;
-    background-color: #f4f4f4;
-    color: #333;
+    background-color: var(--tui-background-base-alt); /* Taiga UI light gray background */
+    color: var(--tui-text-primary); /* Taiga UI primary text color */
 }
 
 h1 {
     text-align: center;
     margin-bottom: 30px;
-    color: #2c3e50;
+    font: var(--tui-font-heading-2); /* Using Taiga UI heading style */
+    color: var(--tui-text-primary);
 }
 
 #search-container {
@@ -20,25 +21,40 @@ h1 {
 
 #search-bar {
     width: 50%;
-    padding: 10px;
+    padding: 0.5rem 0.75rem;
     margin-bottom: 20px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box; /* So padding doesn't increase width */
+    border: 1px solid var(--tui-border-normal);
+    border-radius: var(--tui-radius-m, 0.5rem); /* Fallback for --tui-radius-m */
+    box-sizing: border-box;
+    font: var(--tui-font-text-m);
+    color: var(--tui-text-primary);
+    background-color: var(--tui-background-base);
 }
+#search-bar:focus {
+    border-color: var(--tui-border-focus);
+    outline: none;
+}
+
 
 #entity-list-container {
     margin-top: 20px;
 }
 
-.entity-item {
-    background-color: #fff;
-    border: 1px solid #ddd;
-    padding: 15px;
+/* Generic card styling using Taiga UI variables */
+.entity-item, .run-card, .test-item {
+    background-color: var(--tui-background-base);
+    border: 1px solid var(--tui-border-normal);
+    padding: 15px; /* Or use Taiga spacing vars if defined, e.g., var(--tui-space-4, 1rem) */
     margin-bottom: 15px;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: var(--tui-radius-l, 0.75rem); /* Larger Taiga-like radius */
+    box-shadow: var(--tui-shadow-small);
+    color: var(--tui-text-primary);
 }
+
+.entity-item:hover, .run-card:hover, .test-item:hover {
+    border-color: var(--tui-border-focus); /* Subtle hover effect */
+}
+
 
 .entity-item p {
     margin: 5px 0;
@@ -46,63 +62,65 @@ h1 {
 
 .entity-id {
     font-weight: bold;
-    font-size: 1.1em;
-    color: #3498db;
+    font-size: 1.1em; /* Keep custom sizing or switch to Taiga text vars */
+    color: var(--tui-text-action); /* Taiga action color for links/ids */
 }
 
 .entity-name {
+    font: var(--tui-font-text-l); /* Using Taiga UI text style */
     font-weight: bold;
-    font-size: 1.2em;
-    margin-bottom: 10px !important; /* Add more space below name */
+    margin-bottom: 10px !important;
 }
 
-/* Status-specific styling */
-.status-passed {
-    color: #2ecc71; /* Green */
+/* Status-specific styling using Taiga UI variables */
+.status-passed, .test-result.pass {
+    background-color: var(--tui-background-positive, #2ecc71); /* Fallback color */
+    color: var(--tui-text-positive-on-bg, var(--tui-text-primary-on-accent, white)); /* Fallback to white */
+    font: var(--tui-font-text-s);
     font-weight: bold;
+    padding: 0.25em 0.6em;
+    border-radius: var(--tui-radius-s, 0.25rem); /* Fallback for smaller radius */
+    display: inline-block;
 }
 
-.status-failed {
-    color: #e74c3c; /* Red */
+.status-failed, .test-result.fail {
+    background-color: var(--tui-background-negative, #e74c3c); /* Fallback color */
+    color: var(--tui-text-negative-on-bg, var(--tui-text-primary-on-accent, white)); /* Fallback to white */
+    font: var(--tui-font-text-s);
     font-weight: bold;
+    padding: 0.25em 0.6em;
+    border-radius: var(--tui-radius-s, 0.25rem);
+    display: inline-block;
 }
 
 .status-running {
-    color: #f39c12; /* Orange */
+    background-color: var(--tui-background-info, #f39c12); /* Fallback color */
+    color: var(--tui-text-info-on-bg, var(--tui-text-primary-on-accent, black)); /* Fallback to black for orange */
+    font: var(--tui-font-text-s);
     font-weight: bold;
+    padding: 0.25em 0.6em;
+    border-radius: var(--tui-radius-s, 0.25rem);
+    display: inline-block;
 }
 
 /* Styles for entity.html */
 h2 {
-    color: #34495e;
+    font: var(--tui-font-heading-4); /* Using Taiga UI heading style */
+    color: var(--tui-text-primary);
     margin-top: 30px;
     margin-bottom: 15px;
-    border-bottom: 1px solid #bdc3c7;
+    border-bottom: 1px solid var(--tui-border-normal);
     padding-bottom: 5px;
-}
-
-/* Styling for .run-card, adapted from .entity-item */
-.run-card {
-    background-color: #fff;
-    border: 1px solid #ddd;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Adjustments for elements that will use .run-card */
 #previous-test-runs-list {
-    list-style-type: none; /* Remove list bullets */
-    padding-left: 0; /* Remove default padding for ul */
-    /* Remove background/border as individual items will be cards */
+    list-style-type: none;
+    padding-left: 0;
 }
 
 #previous-test-runs-list li {
-    /* Styles moved to .run-card, remove li-specific styling that conflicts */
-    /* margin-bottom will be handled by .run-card */
-    /* padding will be handled by .run-card */
-    border-bottom: none; /* Remove individual item borders if cards have their own */
+    border-bottom: none;
 }
 
 #previous-test-runs-list li:last-child {
@@ -110,21 +128,14 @@ h2 {
 }
 
 #current-test-status {
-    /* Existing styles will be augmented by .run-card. */
-    /* font-weight: bold; is fine */
-    /* margin-top, margin-bottom will be affected by .run-card, ensure consistency */
-    /* padding will be handled by .run-card, can remove specific padding here if it conflicts */
-    /* background-color will be overridden by .run-card */
-    /* border-left might be desired or might conflict, for now, we keep it and see */
-    font-weight: bold; /* Keep this for emphasis */
-    /* border-left: 4px solid #7f8c8d; */ /* Let's remove this to simplify, card border is enough */
-    /* background-color: #e9ecef; will be overridden by .run-card's #fff */
+    font-weight: bold;
 }
 
 h1#page-title {
     text-align: center;
-    color: #2c3e50; /* Match existing h1 style from index.html for consistency */
-    margin-bottom: 20px; /* Add some space below the title */
+    font: var(--tui-font-heading-2); /* Match h1 style */
+    color: var(--tui-text-primary);
+    margin-bottom: 20px;
 }
 
 /* Styles for test_run.html */
@@ -137,73 +148,63 @@ h1#page-title {
     padding-left: 0;
 }
 
-.test-item {
-    background-color: #fff;
-    border: 1px solid #ddd;
-    padding: 15px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
 .test-name {
+    font: var(--tui-font-text-m);
     font-weight: bold;
 }
 
-.test-result {
+.test-result { /* General container for pass/fail, specific styles above */
     font-weight: bold;
     padding: 3px 6px;
     border-radius: 3px;
-    color: white;
+    color: white; /* This will be overridden by specific pass/fail text colors if they are different */
 }
 
-.test-result.pass {
-    background-color: #2ecc71; /* Green */
-}
-
-.test-result.fail {
-    background-color: #e74c3c; /* Red */
-}
 
 .spoiler-button {
-    background-color: #3498db;
-    color: white;
-    border: none;
+    background-color: var(--tui-background-accent-1);
+    color: var(--tui-text-primary); /* Or a more contrasting color if accent-1 is light */
+    border: 1px solid var(--tui-border-normal);
     padding: 5px 10px;
     margin-left: 10px;
-    border-radius: 3px;
+    border-radius: var(--tui-radius-m, 0.5rem);
     cursor: pointer;
-    font-size: 0.9em;
+    font: var(--tui-font-text-s);
+    transition: background-color var(--tui-duration, 0.3s), border-color var(--tui-duration, 0.3s);
 }
 
 .spoiler-button:hover {
-    background-color: #2980b9;
+    background-color: var(--tui-background-base-alt); /* Taiga hover style */
+    border-color: var(--tui-border-focus);
 }
 
 .test-details {
     margin-top: 10px;
     padding: 10px;
-    background-color: #f9f9f9;
-    border: 1px solid #eee;
-    border-radius: 3px;
-    white-space: pre-wrap; /* Preserve formatting of error messages */
-    font-family: monospace;
+    background-color: var(--tui-background-base);
+    border: 1px solid var(--tui-border-normal);
+    border-radius: var(--tui-radius-m, 0.5rem);
+    white-space: pre-wrap;
+    font-family: var(--tui-font-mono, monospace); /* Assuming a mono font variable or fallback */
+    color: var(--tui-text-secondary);
 }
 
 /* Style for the test run link in index.html */
 .test-run-link {
     display: block;
     margin-top: 10px;
-    padding: 8px 0px; /* Adjusted padding to align with text */
-    background-color: #e9ecef;
-    color: #3498db;
+    padding: 8px 0px;
+    background-color: var(--tui-background-neutral-1, #e9ecef); /* Fallback */
+    color: var(--tui-text-action);
     text-decoration: none;
-    border-radius: 4px;
+    border-radius: var(--tui-radius-m, 4px); /* Fallback */
     text-align: center;
+    font: var(--tui-font-text-m);
     font-weight: bold;
+    transition: background-color var(--tui-duration, 0.3s), color var(--tui-duration, 0.3s);
 }
 
 .test-run-link:hover {
-    background-color: #dfe4e8;
-    color: #2980b9;
+    background-color: var(--tui-background-neutral-1-hover, #dfe4e8); /* Fallback */
+    color: var(--tui-text-action-hover);
 }

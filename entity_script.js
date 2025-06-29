@@ -25,7 +25,9 @@ function displayEntityDetails(entityId, data) {
   if (data.previousTestRuns && data.previousTestRuns.length > 0) {
     data.previousTestRuns.forEach((run) => {
       const listItem = document.createElement("li");
-      listItem.classList.add("run-card");
+      // Using Taiga UI island component for styling
+      listItem.classList.add("tui-island");
+      listItem.classList.add("tui-island_size_m");
 
       const link = document.createElement("a");
       link.href = `test_run.html?runId=${run.runId}`; // Use run.runId
@@ -44,15 +46,18 @@ function displayEntityDetails(entityId, data) {
     });
   } else {
     const listItem = document.createElement("li");
-    listItem.classList.add("run-card");
+    listItem.classList.add("tui-island");
+    listItem.classList.add("tui-island_size_m");
     listItem.textContent = "No previous test runs found.";
     previousTestRunsList.appendChild(listItem);
   }
 
-  // Populate current test status and add .run-card class
+  // Populate current test status and style it as an island
   currentTestStatusPara.textContent =
     data.currentTestStatus || "Status unknown.";
-  currentTestStatusPara.classList.add("run-card"); // Add .run-card class
+  currentTestStatusPara.classList.add("tui-island");
+  currentTestStatusPara.classList.add("tui-island_size_m");
+  // currentTestStatusPara.classList.add("tui-island_padding_m"); // If padding is desired directly on this P
 }
 
 // Main execution flow on page load

@@ -1,0 +1,52 @@
+@sizes: 16;
+
+.generate-space(@direction, @i: 0) when (@i =< @sizes) {
+    .generate-space(@direction, @i + 1);
+
+    &_@{direction}-@{i}&_@{direction}-@{i} {
+        & when (@direction = all) {
+            margin: 0.25rem * @i;
+        }
+
+        & when (@direction = top) {
+            margin-top: 0.25rem * @i;
+        }
+
+        & when (@direction = bottom) {
+            margin-bottom: 0.25rem * @i;
+        }
+
+        & when (@direction = vertical) {
+            margin-top: 0.25rem * @i;
+            margin-bottom: 0.25rem * @i;
+        }
+
+        & when (@direction = left) {
+            margin-left: 0.25rem * @i;
+        }
+
+        & when (@direction = right) {
+            margin-right: 0.25rem * @i;
+        }
+
+        & when (@direction = horizontal) {
+            margin-right: 0.25rem * @i;
+            margin-left: 0.25rem * @i;
+        }
+    }
+}
+
+.tui-space {
+    .generate-space(all);
+    .generate-space(top);
+    .generate-space(bottom);
+    .generate-space(vertical);
+    .generate-space(left);
+    .generate-space(right);
+    .generate-space(horizontal);
+
+    &_auto {
+        margin-left: auto;
+        margin-right: auto;
+    }
+}

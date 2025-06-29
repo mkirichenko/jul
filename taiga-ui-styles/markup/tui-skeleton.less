@@ -1,0 +1,43 @@
+.tui-skeleton {
+    position: relative;
+    color: transparent !important;
+    background: transparent !important;
+    pointer-events: none;
+    user-select: none;
+
+    &::after {
+        .fullsize();
+
+        content: '';
+        background-color: var(--tui-background-neutral-2);
+        animation: tuiSkeletonVibe ease-in-out 1s infinite alternate;
+        border-radius: var(--tui-skeleton-radius, 0);
+    }
+
+    &_light::after {
+        background-color: fade(#fff, 24%);
+    }
+
+    &_rounded::after {
+        border-radius: inherit;
+    }
+
+    &_short::after {
+        inline-size: 40%;
+    }
+
+    &_center::after {
+        .center-left();
+
+        inline-size: 40%;
+    }
+
+    &_text::before {
+        content: '\a0';
+    }
+
+    & * {
+        opacity: 0;
+        visibility: hidden;
+    }
+}

@@ -8,7 +8,14 @@ function displayEntities(entityArray) {
 
   entityArray.forEach((entity) => {
     const entityDiv = document.createElement("div");
-    entityDiv.classList.add("entity-item"); // For potential styling
+    // Using Taiga UI island component for styling
+    entityDiv.classList.add("tui-island");
+    entityDiv.classList.add("tui-island_size_m"); // Default size
+
+    // It's common for tui-island to have a tui-island__content wrapper if using complex content
+    // For simplicity here, we'll apply styles directly or assume simple content.
+    // If more structure is needed (e.g., specific __title, __paragraph sections),
+    // this part would need more divs and classes.
 
     const idPara = document.createElement("p");
     idPara.textContent = `ID: ${entity.id}`;

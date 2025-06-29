@@ -1,0 +1,316 @@
+/* === Taiga UI Typography === */
+.tui-text_h1 {
+  font: var(--tui-font-heading-1);
+}
+.tui-text_h2 {
+  font: var(--tui-font-heading-2);
+}
+.tui-text_h3 {
+  font: var(--tui-font-heading-3);
+}
+.tui-text_h4 {
+  font: var(--tui-font-heading-4);
+}
+.tui-text_h5 {
+  font: var(--tui-font-heading-5);
+}
+.tui-text_h6 {
+  font: var(--tui-font-heading-6);
+}
+
+/* === Taiga UI Island (for Cards) === */
+.tui-island {
+  position: relative;
+  display: block;
+  border-radius: var(--tui-radius-xl);
+  background-color: var(--tui-background-base);
+  overflow-wrap: break-word;
+  text-decoration: none;
+  color: var(--tui-text-primary);
+  outline: none;
+  box-sizing: content-box;
+}
+.tui-island:not(.tui-island_hoverable)::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  content: '';
+  box-sizing: border-box;
+  border: 1px solid var(--tui-border-normal);
+  border-radius: inherit;
+  pointer-events: none;
+}
+.tui-island:focus::before,
+.tui-island:hover:focus::before {
+  border-color: var(--tui-border-focus);
+}
+.tui-island_hoverable {
+  transition-property: all;
+  transition-duration: var(--tui-duration, 300ms);
+  transition-timing-function: ease-in-out;
+  background: var(--tui-background-elevation-2);
+  box-shadow: var(--tui-shadow-small);
+  cursor: pointer;
+  transition-property: transform, box-shadow;
+  will-change: transform, box-shadow;
+}
+.tui-island_hoverable:hover {
+  box-shadow: var(--tui-shadow-small-hover);
+  transform: translateY(-0.25rem);
+}
+.tui-island_transparent {
+  background-color: transparent;
+}
+.tui-island_size_s {
+  /* --tui-radius-xl is locally scoped here if this class is used */
+  /* Default --tui-radius-xl might be from a theme file not included in global */
+  border-radius: calc(4 * var(--tui-radius-l, 0.75rem) / 3); /* Assuming a fallback for tui-radius-l if not globally defined */
+  font: var(--tui-font-text-s);
+  padding: 1rem;
+}
+.tui-island_size_m {
+  border-radius: calc(5 * var(--tui-radius-l, 0.75rem) / 3); /* Assuming a fallback for tui-radius-l */
+  font: var(--tui-font-text-m);
+  padding: 1rem;
+}
+.tui-island_size_l {
+  font: var(--tui-font-text-m);
+  padding: 1.25rem;
+  /* Uses the global --tui-radius-xl if available, or its own if nested under a size_s/m */
+}
+.tui-island_text-align_left {
+  text-align: start;
+}
+.tui-island_text-align_center {
+  text-align: center;
+}
+.tui-island_text-align_right {
+  text-align: end;
+}
+.tui-island__content {
+  display: flex;
+  justify-content: space-between;
+}
+.tui-island_text-align_center .tui-island__content {
+  display: block;
+}
+.tui-island__content > * {
+  min-inline-size: 0;
+}
+.tui-island__category {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.075em;
+  margin: 0 0 0.5rem;
+  color: var(--tui-text-secondary);
+}
+.tui-island_size_l .tui-island__category {
+  margin: 0 0 0.75rem;
+}
+.tui-island__title {
+  font: var(--tui-font-text-m);
+  margin: 0 0 0.5rem;
+}
+.tui-island_size_m .tui-island__title {
+  font: var(--tui-font-heading-6);
+  margin: 0 0 0.75rem;
+}
+.tui-island_size_l .tui-island__title {
+  font: var(--tui-font-heading-6);
+}
+.tui-island__paragraph {
+  margin: 0;
+  color: var(--tui-text-secondary);
+}
+.tui-island__paragraph_link.tui-island__paragraph {
+  margin-top: 1rem;
+}
+.tui-island_size_l .tui-island__paragraph_link.tui-island__paragraph {
+  margin: 1rem 0 0;
+}
+.tui-island__paragraph_button.tui-island__paragraph {
+  margin-top: 1.25rem;
+}
+.tui-island_size_l .tui-island__paragraph_button.tui-island__paragraph {
+  margin: 1.25rem 0 0;
+}
+.tui-island__figure {
+  display: flex;
+  justify-content: center;
+  order: 1;
+  flex-shrink: 0;
+  margin: 0 0 0 1rem;
+}
+.tui-island_size_l .tui-island__figure {
+  margin-left: 2.25rem;
+}
+.tui-island_text-align_center .tui-island__figure {
+  margin: 0 0 0.75rem;
+}
+.tui-island__carousel-controls {
+  display: flex;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-block-end: 1px solid var(--tui-border-normal);
+  white-space: nowrap;
+}
+.tui-island__carousel-pages {
+  margin-left: auto;
+  color: var(--tui-text-secondary);
+}
+.tui-island__carousel-button {
+  margin-right: 0.5rem;
+}
+.tui-island .tui-island__footer-button {
+  display: block;
+  max-inline-size: unset;
+  /* Calculation might need adjustment based on actual padding/border of the island */
+  inline-size: calc(100% + 2 * (1rem - 1px)); /* Approximation for size_s/m padding */
+  margin: 1rem calc(-1rem + 1px) calc(-1rem + 1px);
+  border-block-start: 1px solid var(--tui-border-normal);
+  border-radius: 0 0 var(--tui-radius-xl) var(--tui-radius-xl); /* Uses parent's --tui-radius-xl */
+}
+.tui-island_size_l .tui-island__footer-button {
+   /* Approximation for size_l padding */
+  inline-size: calc(100% + 2 * (1.25rem - 1px));
+  margin: 1.25rem calc(-1.25rem + 1px) calc(-1.25rem + 1px);
+}
+.tui-island__marker:first-child:not(:only-child) {
+  margin-right: 1.25rem;
+}
+.tui-island__marker:not(:first-child),
+.tui-island__marker:only-child {
+  margin-left: 1.25rem;
+}
+
+/* === Taiga UI Form (for Search Bar) === */
+/*
+  Basic input styling:
+  Taiga UI's taiga-ui.css applies fundamental resets to <input> elements.
+  For specific styling (borders, padding, focus, etc.), you would typically:
+  1. Rely on a Taiga UI theme CSS file (which we haven't fetched) that styles inputs globally.
+  2. Or, style your <input> elements directly, using Taiga UI variables.
+  Example for your style.css:
+  input[type="search"] {
+    border: 1px solid var(--tui-border-normal);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--tui-radius-m, 0.5rem); // Provide fallback if --tui-radius-m is not globally defined
+    font-family: var(--tui-font-text-m);
+    color: var(--tui-text-primary);
+    background-color: var(--tui-background-base);
+  }
+  input[type="search"]:focus {
+    border-color: var(--tui-border-focus);
+    outline: none;
+  }
+*/
+
+/* For buttons, you can use .tui-form__button */
+.tui-form__button {
+  /* Example styling using available Taiga UI variables */
+  background-color: var(--tui-background-accent-1);
+  color: var(--tui-text-primary); /* Or choose a color that contrasts well with accent-1 */
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--tui-radius-m, 0.5rem); /* Provide fallback */
+  font: var(--tui-font-text-m);
+  cursor: pointer;
+  transition: background-color var(--tui-duration, 0.3s);
+  margin-left: 0.75rem;
+}
+.tui-form__button:hover {
+  /* Need a hover color. Taiga UI might have --tui-background-accent-1-hover
+     but it's not in our current taiga-ui.css. We can use a simple darken or a different variable.
+     For now, let's assume a general darker shade or rely on component-specific hover states if they exist.
+     Alternatively, define one or use text-action for hover effect.
+  */
+   filter: brightness(90%); /* Simple hover effect if no specific variable */
+}
+.tui-form__button:first-child {
+  margin-left: 0;
+}
+
+/* You can wrap your search bar in a .tui-form or .tui-form__row if needed */
+.tui-form {
+  /* Basic form styling */
+}
+.tui-form__row {
+  margin-top: 1.25rem;
+}
+.tui-form__row:first-child {
+  margin-top: 0;
+}
+.tui-form__row_multi-fields {
+  display: flex;
+}
+.tui-form__multi-field {
+  flex: 1 1 0;
+  min-inline-size: 0;
+  margin-left: 1.25rem;
+}
+.tui-form__multi-field:first-child {
+  margin-left: 0;
+}
+
+/* === Taiga UI Variables (Selection from taiga-ui.css for reference) === */
+/*
+  To use these, ensure taiga-ui.css (or at least its variable definitions) is loaded before your custom CSS.
+
+  Typography:
+  font: var(--tui-font-heading-1);
+  font: var(--tui-font-heading-2);
+  font: var(--tui-font-heading-3);
+  font: var(--tui-font-heading-4);
+  font: var(--tui-font-heading-5);
+  font: var(--tui-font-heading-6);
+  font: var(--tui-font-text-xl);
+  font: var(--tui-font-text-l);
+  font: var(--tui-font-text-ui-l);
+  font: var(--tui-font-text-m);
+  font: var(--tui-font-text-ui-m);
+  font: var(--tui-font-text-s);
+  font: var(--tui-font-text-ui-s);
+  font: var(--tui-font-text-xs);
+
+  Text Colors:
+  color: var(--tui-text-primary);
+  color: var(--tui-text-secondary);
+  color: var(--tui-text-tertiary);
+  color: var(--tui-text-action);
+  color: var(--tui-text-action-hover);
+
+  Background Colors:
+  background-color: var(--tui-background-base);
+  background-color: var(--tui-background-base-alt);
+  background-color: var(--tui-background-elevation-2); // Used for tui-island_hoverable
+  background-color: var(--tui-background-neutral-2); // Used for tui-skeleton
+  background-color: var(--tui-background-accent-1); // Used for tui-list item bullet
+
+  Borders:
+  border: 1px solid var(--tui-border-normal);
+  border-color: var(--tui-border-focus);
+
+  Service Colors:
+  background-color: var(--tui-service-selection-background);
+
+  Radii:
+  border-radius: var(--tui-radius-xl); // Defined for tui-island
+  border-radius: var(--tui-radius-l); // Referenced by tui-island for calculations, not directly applied in global island style.
+                                     // Actual value might come from a theme. Assume fallback e.g., 0.75rem.
+  border-radius: var(--tui-radius-m, 0.5rem); // Example fallback for medium radius
+
+  Shadows:
+  box-shadow: var(--tui-shadow-small);
+  box-shadow: var(--tui-shadow-small-hover);
+
+  Transitions / Animations:
+  transition-duration: var(--tui-duration, 300ms); // Fallback if not defined
+  opacity: var(--tui-fade-start, 0);
+  opacity: var(--tui-fade-end, 1);
+
+  Skeleton:
+  border-radius: var(--tui-skeleton-radius, 0);
+*/
