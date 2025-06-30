@@ -1,4 +1,4 @@
-import { getTestRunDetails } from "data_service.js";
+import { getTestRunDetails } from "./data_service.js";
 
 document.addEventListener("DOMContentLoaded", function () {
   // Function to parse runId from URL query parameter

@@ -1,5 +1,5 @@
 // JavaScript for Test Suites Dashboard
-import { getEntities } from "data_service.js";
+import { getEntities } from "./data_service.js";
 
 function displayEntities(entityArray) {
   const entityListContainer = document.getElementById("entity-list-container");

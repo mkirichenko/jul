@@ -1,5 +1,5 @@
 // JavaScript for Entity Details Page
-import { getEntityDetails } from "data_service.js";
+import { getEntityDetails } from "./data_service.js";
 
 // Function to parse entity ID from URL query parameter
 function getEntityIdFromUrl() {
