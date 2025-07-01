@@ -10,11 +10,13 @@ function displayEntities(entityArray) {
     const entityDiv = document.createElement("div");
     entityDiv.classList.add("entity-item"); // For potential styling
 
+    const idPara = document.createElement("p");
     const idLink = document.createElement("a");
     idLink.href = `https://example.com/id/${entity.id}`;
     idLink.textContent = `ID: ${entity.id}`;
     idLink.target = "_blank"; // Open in new tab
-    entityDiv.appendChild(idLink);
+    idPara.appendChild(idLink);
+    entityDiv.appendChild(idPara);
 
     const nameLink = document.createElement("a");
     nameLink.href = `entity.html?id=${entity.id}`;
