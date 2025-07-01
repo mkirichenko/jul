@@ -10,25 +10,30 @@ function displayEntities(entityArray) {
     const entityDiv = document.createElement("div");
     entityDiv.classList.add("entity-item"); // For potential styling
 
-    const idPara = document.createElement("p");
-    idPara.textContent = `ID: ${entity.id}`;
-    entityDiv.appendChild(idPara);
+    const idLink = document.createElement("a");
+    idLink.href = `https://example.com/id/${entity.id}`;
+    idLink.textContent = `ID: ${entity.id}`;
+    idLink.target = "_blank"; // Open in new tab
+    entityDiv.appendChild(idLink);
 
     const nameLink = document.createElement("a");
     nameLink.href = `entity.html?id=${entity.id}`;
     nameLink.textContent = `Name: ${entity.name}`;
     entityDiv.appendChild(nameLink);
 
-    const versionPara = document.createElement("p");
-    versionPara.textContent = `Version: ${entity.version}`;
-    entityDiv.appendChild(versionPara);
+    // const versionPara = document.createElement("p"); // Removed version
+    // versionPara.textContent = `Version: ${entity.version}`;
+    // entityDiv.appendChild(versionPara);
 
     const statusPara = document.createElement("p");
-    statusPara.textContent = `Status: ${entity.latest_tests_results.status}`;
-    // Add class based on status
-    statusPara.classList.add(
-      `status-${entity.latest_tests_results.status.toLowerCase()}`,
+    const statusSpan = document.createElement("span"); // Use span for badge styling
+    statusSpan.textContent = entity.latest_tests_results.status;
+    statusSpan.classList.add("status-badge"); // General badge class
+    statusSpan.classList.add(
+      `status-${entity.latest_tests_results.status.toLowerCase()}`, // Status-specific class
     );
+    statusPara.textContent = "Status: ";
+    statusPara.appendChild(statusSpan);
     entityDiv.appendChild(statusPara);
 
     const detailsPara = document.createElement("p");
