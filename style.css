@@ -9,7 +9,7 @@ body {
 
 .header-container {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     margin-bottom: 30px;
 }
 
@@ -20,12 +20,10 @@ body {
 }
 
 h1 {
-    /* text-align: center; */ /* Removed to allow left alignment */
     text-align: left;
     margin-bottom: 0; /* Adjusted as part of flex container */
     color: #2c3e50;
     font-size: 2em; /* Ensure this matches icon height */
-    line-height: 1.2; /* For icon vertical alignment within the line */
 }
 
 #search-container {
