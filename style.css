@@ -7,19 +7,32 @@ body {
     color: #333;
 }
 
-h1 {
-    text-align: center;
+.header-container {
+    display: flex;
+    align-items: baseline;
     margin-bottom: 30px;
+}
+
+#header-icon {
+    margin-right: 10px;
+    height: 2em; /* Match h1 font-size */
+    width: auto; /* Maintain aspect ratio */
+}
+
+h1 {
+    text-align: left;
+    margin-bottom: 0; /* Adjusted as part of flex container */
     color: #2c3e50;
+    font-size: 2em; /* Ensure this matches icon height */
 }
 
 #search-container {
-    text-align: center;
+    /* text-align: center; */ /* No longer needed if search bar is full width */
     margin-bottom: 20px;
 }
 
 #search-bar {
-    width: 50%;
+    width: 100%; /* Changed from 50% to full width */
     padding: 10px;
     margin-bottom: 20px;
     border: 1px solid #ccc;
@@ -57,19 +70,32 @@ h1 {
 }
 
 /* Status-specific styling */
-.status-passed {
-    color: #2ecc71; /* Green */
+.status-badge {
+    display: inline-block;
+    padding: 3px 7px;
+    font-size: 0.9em;
     font-weight: bold;
+    line-height: 1;
+    color: #fff; /* Default text color for badges, can be overridden */
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+.status-passed {
+    background-color: #2ecc71; /* Green */
+    /* color: #fff; */ /* Ensure text is readable on background */
 }
 
 .status-failed {
-    color: #e74c3c; /* Red */
-    font-weight: bold;
+    background-color: #e74c3c; /* Red */
+    /* color: #fff; */
 }
 
 .status-running {
-    color: #f39c12; /* Orange */
-    font-weight: bold;
+    background-color: #f39c12; /* Orange */
+    /* color: #fff; */
 }
 
 /* Styles for entity.html */
