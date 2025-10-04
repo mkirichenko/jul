@@ -1,28 +1,23 @@
-<!doctype html>
-<html>
-    <head>
-        <title>Test Suites Dashboard</title>
-        <link rel="stylesheet" href="style.css" />
-    </head>
-    <body>
-        <div class="header-container">
-            <img
-                src="https://cdn.tbank.ru/static/pfa-multimedia/images/33447f85-5b92-42f9-8d88-509bd152b47c.svg"
-                alt="Dashboard Icon"
-                id="header-icon"
-            />
-            <h1>Test Suites Dashboard</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Diagram Editor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <h2>Controls</h2>
+            <button id="add-rect">Add Rectangle</button>
+            <button id="connect-mode">Connect</button>
         </div>
-        <div id="search-container">
-            <input
-                type="text"
-                id="search-bar"
-                placeholder="Search by entity ID..."
-            />
+        <div class="right-panel">
+            <canvas id="canvas"></canvas>
         </div>
-        <div id="entity-list-container">
-            <!-- Entity list will be displayed here -->
-        </div>
-        <script type="module" src="script.js"></script>
-    </body>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="script.js"></script>
+</body>
 </html>
