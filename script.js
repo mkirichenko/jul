@@ -1,98 +1,77 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const canvas = new fabric.Canvas('canvas', {
-        width: 800,
-        height: 600,
-        backgroundColor: '#fff'
-    });
+// JavaScript for Test Suites Dashboard
+import { getEntities } from "./data_service.js";
 
-    const addRectBtn = document.getElementById('add-rect');
-    const connectModeBtn = document.getElementById('connect-mode');
-    let isConnectMode = false;
-    let selectedShapes = [];
-    let rectCounter = 0;
+function displayEntities(entityArray) {
+  const entityListContainer = document.getElementById("entity-list-container");
+  // Clear existing content
+  entityListContainer.innerHTML = "";
 
-    addRectBtn.addEventListener('click', () => {
-        const rect = new fabric.Rect({
-            left: 100 + (rectCounter % 5) * 120,
-            top: 100 + Math.floor(rectCounter / 5) * 120,
-            fill: 'red',
-            width: 100,
-            height: 100,
-            originX: 'left',
-            originY: 'top',
-            // Custom property to identify shapes
-            id: 'rect_' + rectCounter
-        });
-        canvas.add(rect);
-        rectCounter++;
-    });
+  entityArray.forEach((entity) => {
+    const entityDiv = document.createElement("div");
+    entityDiv.classList.add("entity-item"); // For potential styling
 
-    window.connectRectsByIds = (id1, id2) => {
-        const rect1 = canvas.getObjects().find(obj => obj.id === id1);
-        const rect2 = canvas.getObjects().find(obj => obj.id === id2);
+    const idPara = document.createElement("p");
+    const idLink = document.createElement("a");
+    idLink.href = `https://example.com/id/${entity.id}`;
+    idLink.textContent = `ID: ${entity.id}`;
+    idLink.target = "_blank"; // Open in new tab
+    idPara.appendChild(idLink);
+    entityDiv.appendChild(idPara);
 
-        if (rect1 && rect2) {
-            const from = rect1.getCenterPoint();
-            const to = rect2.getCenterPoint();
+    const nameLink = document.createElement("a");
+    nameLink.href = `entity.html?id=${entity.id}`;
+    nameLink.textContent = `Name: ${entity.name}`;
+    entityDiv.appendChild(nameLink);
 
-            const line = new fabric.Line([from.x, from.y, to.x, to.y], {
-                stroke: 'black',
-                strokeWidth: 2,
-                selectable: false,
-                evented: false,
-            });
-            canvas.add(line);
-            canvas.sendToBack(line);
-            canvas.renderAll();
-            return true;
-        }
-        return false;
+    // const versionPara = document.createElement("p"); // Removed version
+    // versionPara.textContent = `Version: ${entity.version}`;
+    // entityDiv.appendChild(versionPara);
+
+    const statusPara = document.createElement("p");
+    const statusSpan = document.createElement("span"); // Use span for badge styling
+    statusSpan.textContent = entity.latest_tests_results.status;
+    statusSpan.classList.add("status-badge"); // General badge class
+    statusSpan.classList.add(
+      `status-${entity.latest_tests_results.status.toLowerCase()}`, // Status-specific class
+    );
+    statusPara.textContent = "Status: ";
+    statusPara.appendChild(statusSpan);
+    entityDiv.appendChild(statusPara);
+
+    const detailsPara = document.createElement("p");
+    detailsPara.textContent = `Details: ${entity.latest_tests_results.details}`;
+    entityDiv.appendChild(detailsPara);
+
+    // Add link to the latest test run
+    if (entity.test_runs && entity.test_runs.length > 0) {
+      const latestRun = entity.test_runs.reduce((latest, current) => {
+        return new Date(current.date) > new Date(latest.date)
+          ? current
+          : latest;
+      });
+      const testRunLink = document.createElement("a");
+      testRunLink.href = `test_run.html?runId=${latestRun.runId}`;
+      testRunLink.textContent = `View Latest Test Run (${latestRun.runId})`;
+      testRunLink.classList.add("test-run-link"); // For styling
+      entityDiv.appendChild(testRunLink);
     }
 
-    connectModeBtn.addEventListener('click', () => {
-        isConnectMode = !isConnectMode;
-        if (isConnectMode) {
-            connectModeBtn.textContent = 'Exit Connect Mode';
-            canvas.selection = false; // Disable group selection
-            canvas.discardActiveObject();
-        } else {
-            connectModeBtn.textContent = 'Connect';
-            selectedShapes = [];
-            canvas.selection = true;
-        }
+    entityListContainer.appendChild(entityDiv);
+  });
+}
+
+// Display entities on page load
+document.addEventListener("DOMContentLoaded", () => {
+  const entities = getEntities(); // Fetch entities from dataService
+  displayEntities(entities);
+
+  const searchBar = document.getElementById("search-bar");
+  searchBar.addEventListener("input", () => {
+    const searchTerm = searchBar.value.toLowerCase();
+    const baseEntities = getEntities(); // Fetch fresh copy for filtering
+    const filteredEntities = baseEntities.filter((entity) => {
+      return String(entity.id).toLowerCase().includes(searchTerm);
     });
-
-    canvas.on('mouse:down', (options) => {
-        if (isConnectMode && options.target && options.target.id.startsWith('rect_')) {
-            selectedShapes.push(options.target);
-            options.target.set('fill', 'blue'); // Highlight selected shape
-            canvas.renderAll();
-
-            if (selectedShapes.length === 2) {
-                const from = selectedShapes[0].getCenterPoint();
-                const to = selectedShapes[1].getCenterPoint();
-
-                const line = new fabric.Line([from.x, from.y, to.x, to.y], {
-                    stroke: 'black',
-                    strokeWidth: 2,
-                    selectable: false,
-                    evented: false,
-                });
-
-                canvas.add(line);
-                canvas.sendToBack(line);
-
-                // Reset colors
-                selectedShapes[0].set('fill', 'red');
-                selectedShapes[1].set('fill', 'red');
-
-                // Exit connect mode
-                isConnectMode = false;
-                connectModeBtn.textContent = 'Connect';
-                selectedShapes = [];
-                canvas.selection = true;
-                canvas.renderAll();
-            }
-        }
-    });
+    displayEntities(filteredEntities);
+  });
 });
