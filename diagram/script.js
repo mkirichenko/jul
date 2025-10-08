@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 strokeWidth: 2,
                 selectable: false,
                 evented: false,
+                connects: { from: id1, to: id2 },
             });
             canvas.add(line);
             canvas.sendToBack(line);
@@ -77,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     strokeWidth: 2,
                     selectable: false,
                     evented: false,
+                    connects: { from: selectedShapes[0].id, to: selectedShapes[1].id },
                 });
 
                 canvas.add(line);
@@ -94,5 +96,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 canvas.renderAll();
             }
         }
+    });
+
+    canvas.on('object:moving', (e) => {
+        const movedObject = e.target;
+        if (!movedObject || !movedObject.id || !movedObject.id.startsWith('rect_')) {
+            return;
+        }
+
+        const movedRectId = movedObject.id;
+
+        canvas.getObjects('line').forEach(line => {
+            if (line.connects && (line.connects.from === movedRectId || line.connects.to === movedRectId)) {
+                const rect1 = canvas.getObjects().find(obj => obj.id === line.connects.from);
+                const rect2 = canvas.getObjects().find(obj => obj.id === line.connects.to);
+
+                if (rect1 && rect2) {
+                    const fromPoint = rect1.getCenterPoint();
+                    const toPoint = rect2.getCenterPoint();
+                    line.set({ x1: fromPoint.x, y1: fromPoint.y, x2: toPoint.x, y2: toPoint.y });
+                }
+            }
+        });
     });
 });
