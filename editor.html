@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Editor</title>
+    <link rel="stylesheet" href="editor.css">
+</head>
+<body>
+    <div class="editor-container">
+        <!-- Left Sidebar: Node Palette -->
+        <aside class="sidebar left-sidebar">
+            <h2>Nodes</h2>
+            <div class="node-palette">
+                <div class="palette-item" data-node-type="start">
+                    <div class="palette-icon start-icon"></div>
+                    <span>Start</span>
+                </div>
+                <div class="palette-item" data-node-type="action">
+                    <div class="palette-icon action-icon"></div>
+                    <span>Action</span>
+                </div>
+                <div class="palette-item" data-node-type="condition">
+                    <div class="palette-icon condition-icon"></div>
+                    <span>Condition</span>
+                </div>
+                <div class="palette-item" data-node-type="end">
+                    <div class="palette-icon end-icon"></div>
+                    <span>End</span>
+                </div>
+            </div>
+            <hr>
+            <div class="toolbar">
+                <button id="btn-delete" title="Delete selected">Delete</button>
+                <button id="btn-clear" title="Clear canvas">Clear All</button>
+            </div>
+        </aside>
+
+        <!-- Main Canvas Area -->
+        <main class="canvas-area">
+            <div class="canvas-wrapper">
+                <canvas id="workflow-canvas"></canvas>
+            </div>
+        </main>
+
+        <!-- Right Sidebar: Properties Panel -->
+        <aside class="sidebar right-sidebar">
+            <h2>Properties</h2>
+            <div id="properties-panel">
+                <p class="no-selection">Select a node to edit its properties</p>
+                <div class="properties-form" style="display: none;">
+                    <div class="form-group">
+                        <label for="node-label">Label</label>
+                        <input type="text" id="node-label" placeholder="Node label">
+                    </div>
+                    <div class="form-group">
+                        <label for="node-description">Description</label>
+                        <textarea id="node-description" rows="3" placeholder="Description"></textarea>
+                    </div>
+                    <div class="form-group condition-only" style="display: none;">
+                        <label for="node-condition">Condition</label>
+                        <input type="text" id="node-condition" placeholder="e.g., value > 10">
+                    </div>
+                    <div class="form-group action-only" style="display: none;">
+                        <label for="node-action-type">Action Type</label>
+                        <select id="node-action-type">
+                            <option value="http">HTTP Request</option>
+                            <option value="email">Send Email</option>
+                            <option value="transform">Transform Data</option>
+                            <option value="delay">Delay</option>
+                            <option value="script">Run Script</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="editor.js"></script>
+</body>
+</html>
