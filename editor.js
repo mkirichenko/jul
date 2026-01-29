@@ -17,7 +17,12 @@
         },
         grid: {
             size: 20,
-            color: '#2d3561'
+            color: 'rgba(45, 53, 97, 0.3)'
+        },
+        zoom: {
+            min: 0.25,
+            max: 3,
+            step: 0.1
         },
         nodes: {
             start: {
@@ -62,7 +67,8 @@
         nodeIdCounter: 0,
         connectionMode: false,
         connectionStart: null,
-        selectedNode: null
+        selectedNode: null,
+        zoomLevel: 1
     };
 
     // ============================================
@@ -429,6 +435,58 @@
                 cancelConnectionMode();
             }
         });
+
+        // Mouse wheel zoom
+        state.canvas.on('mouse:wheel', (opt) => {
+            const delta = opt.e.deltaY;
+            let zoom = state.canvas.getZoom();
+            zoom *= 0.999 ** delta;
+
+            // Clamp zoom level
+            zoom = Math.min(Math.max(zoom, CONFIG.zoom.min), CONFIG.zoom.max);
+
+            // Zoom to mouse pointer position
+            state.canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+            state.zoomLevel = zoom;
+            updateZoomDisplay();
+
+            opt.e.preventDefault();
+            opt.e.stopPropagation();
+        });
+    }
+
+    // ============================================
+    // Zoom Controls
+    // ============================================
+    function zoomIn() {
+        let zoom = state.canvas.getZoom() + CONFIG.zoom.step;
+        zoom = Math.min(zoom, CONFIG.zoom.max);
+        const center = { x: CONFIG.canvas.width / 2, y: CONFIG.canvas.height / 2 };
+        state.canvas.zoomToPoint(center, zoom);
+        state.zoomLevel = zoom;
+        updateZoomDisplay();
+    }
+
+    function zoomOut() {
+        let zoom = state.canvas.getZoom() - CONFIG.zoom.step;
+        zoom = Math.max(zoom, CONFIG.zoom.min);
+        const center = { x: CONFIG.canvas.width / 2, y: CONFIG.canvas.height / 2 };
+        state.canvas.zoomToPoint(center, zoom);
+        state.zoomLevel = zoom;
+        updateZoomDisplay();
+    }
+
+    function zoomReset() {
+        state.canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+        state.zoomLevel = 1;
+        updateZoomDisplay();
+    }
+
+    function updateZoomDisplay() {
+        const display = document.getElementById('zoom-level');
+        if (display) {
+            display.textContent = Math.round(state.zoomLevel * 100) + '%';
+        }
     }
 
     function handleSelection(e) {
@@ -666,6 +724,11 @@
         document.getElementById('btn-delete').addEventListener('click', deleteSelected);
         document.getElementById('btn-clear').addEventListener('click', clearCanvas);
 
+        // Zoom buttons
+        document.getElementById('btn-zoom-in').addEventListener('click', zoomIn);
+        document.getElementById('btn-zoom-out').addEventListener('click', zoomOut);
+        document.getElementById('btn-zoom-reset').addEventListener('click', zoomReset);
+
         // Create a sample workflow
         createSampleWorkflow();
     }
@@ -696,6 +759,10 @@
         createConnection,
         deleteSelected,
         clearCanvas,
+        zoomIn,
+        zoomOut,
+        zoomReset,
+        getZoom: () => state.zoomLevel,
         getNodes: () => Array.from(state.nodes.values()),
         getConnections: () => state.connections,
         exportWorkflow: () => ({

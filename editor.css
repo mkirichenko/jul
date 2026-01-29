@@ -140,6 +140,7 @@ body, html {
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    position: relative;
 }
 
 .canvas-wrapper {
@@ -224,6 +225,58 @@ body, html {
 .port:hover {
     background-color: #e94560;
     transform: scale(1.2);
+}
+
+/* Zoom Controls */
+.zoom-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #16213e;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #0f3460;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.zoom-controls button {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background-color: #1a1a2e;
+    border: 1px solid #0f3460;
+    border-radius: 6px;
+    color: #eee;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.zoom-controls button:hover {
+    background-color: #0f3460;
+    border-color: #e94560;
+}
+
+.zoom-controls button#btn-zoom-reset {
+    width: auto;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: normal;
+}
+
+.zoom-controls #zoom-level {
+    min-width: 50px;
+    text-align: center;
+    font-size: 13px;
+    color: #888;
 }
 
 /* Responsive adjustments */
