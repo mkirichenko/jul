@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: jul-backend
+
+kafka:
+  producer:
+    bootstrap-servers: localhost:9092
+    acks: all
+    compression-type: gzip
+    retries: 3
+    client-id: jul-backend-producer
+
+server:
+  port: 8080
