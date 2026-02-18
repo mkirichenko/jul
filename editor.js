@@ -285,37 +285,115 @@
     }
 
     // ============================================
-    // Connection System
+    // Connection System - Orthogonal Routing
     // ============================================
+    const ROUTE_STUB = 25; // minimum distance extending from a port
+
+    function getPortDirection(portType) {
+        switch (portType) {
+            case 'output':       return { dx: 0, dy: 1 };   // down
+            case 'output-true':  return { dx: 1, dy: 0 };   // right
+            case 'output-false': return { dx: -1, dy: 0 };  // left
+            case 'input':        return { dx: 0, dy: -1 };  // up
+            default:             return { dx: 0, dy: 1 };
+        }
+    }
+
+    function buildOrthogonalRoute(from, to, fromPortType) {
+        const dir = getPortDirection(fromPortType);
+        // Stub: short segment exiting the source port
+        const stub = { x: from.x + dir.dx * ROUTE_STUB, y: from.y + dir.dy * ROUTE_STUB };
+        // Entry: short segment before entering the target port (always from above)
+        const entry = { x: to.x, y: to.y - ROUTE_STUB };
+
+        const points = [from, stub];
+
+        if (dir.dy !== 0) {
+            // Exiting vertically (down from output port)
+            routeVerticalExit(points, stub, entry, from, to);
+        } else {
+            // Exiting horizontally (left/right from condition ports)
+            routeHorizontalExit(points, stub, entry, dir);
+        }
+
+        points.push(entry, to);
+        return deduplicatePoints(points);
+    }
+
+    function routeVerticalExit(points, stub, entry, from, to) {
+        if (stub.y < entry.y) {
+            // Target is below - simple mid-level routing
+            const midY = (stub.y + entry.y) / 2;
+            points.push({ x: stub.x, y: midY });
+            points.push({ x: entry.x, y: midY });
+        } else {
+            // Target is above or same level - detour sideways
+            const detourX = from.x <= to.x
+                ? Math.min(from.x, to.x) - 60
+                : Math.max(from.x, to.x) + 60;
+            points.push({ x: detourX, y: stub.y });
+            points.push({ x: detourX, y: entry.y });
+        }
+    }
+
+    function routeHorizontalExit(points, stub, entry, dir) {
+        // Check if target x is "ahead" in exit direction
+        const targetAhead = dir.dx > 0 ? stub.x < entry.x : stub.x > entry.x;
+
+        if (targetAhead) {
+            // Target is in the direction we're heading - go to target x, then down
+            points.push({ x: entry.x, y: stub.y });
+        } else {
+            // Target is behind us - go vertically to midpoint, then across
+            const midY = (stub.y + entry.y) / 2;
+            points.push({ x: stub.x, y: midY });
+            points.push({ x: entry.x, y: midY });
+        }
+    }
+
+    function deduplicatePoints(points) {
+        return points.filter((p, i) =>
+            i === 0 || Math.abs(p.x - points[i - 1].x) > 0.5 || Math.abs(p.y - points[i - 1].y) > 0.5
+        );
+    }
+
+    function pointsToSvgPath(points) {
+        let d = `M ${points[0].x} ${points[0].y}`;
+        for (let i = 1; i < points.length; i++) {
+            d += ` L ${points[i].x} ${points[i].y}`;
+        }
+        return d;
+    }
+
+    function getConnectionColor(portType) {
+        if (portType === 'output-true') return '#4ade80';
+        if (portType === 'output-false') return '#f87171';
+        return CONFIG.connection.stroke;
+    }
+
     function createConnection(fromNode, toNode, portType = 'output') {
         const fromPoint = getPortPosition(fromNode, portType);
         const toPoint = getPortPosition(toNode, 'input');
-
         if (!fromPoint || !toPoint) return null;
 
-        // Create a curved line (bezier)
-        const midY = (fromPoint.y + toPoint.y) / 2;
+        const routePoints = buildOrthogonalRoute(fromPoint, toPoint, portType);
+        const pathString = pointsToSvgPath(routePoints);
+        const color = getConnectionColor(portType);
 
-        const path = new fabric.Path(
-            `M ${fromPoint.x} ${fromPoint.y} ` +
-            `C ${fromPoint.x} ${midY}, ${toPoint.x} ${midY}, ${toPoint.x} ${toPoint.y}`,
-            {
-                stroke: portType === 'output-true' ? '#4ade80' :
-                        portType === 'output-false' ? '#f87171' :
-                        CONFIG.connection.stroke,
-                strokeWidth: CONFIG.connection.strokeWidth,
-                fill: '',
-                selectable: false,
-                evented: false,
-                fromNodeId: fromNode.nodeId,
-                toNodeId: toNode.nodeId,
-                portType: portType,
-                isConnection: true
-            }
-        );
+        const path = new fabric.Path(pathString, {
+            stroke: color,
+            strokeWidth: CONFIG.connection.strokeWidth,
+            fill: '',
+            selectable: false,
+            evented: false,
+            fromNodeId: fromNode.nodeId,
+            toNodeId: toNode.nodeId,
+            portType: portType,
+            isConnection: true
+        });
 
-        // Add arrow at end
-        const arrow = createArrow(toPoint.x, toPoint.y - 10, portType);
+        // Arrow at end, oriented to match the last segment
+        const arrow = createArrowFromSegment(routePoints, color);
 
         state.connections.push({ line: path, arrow: arrow, fromNodeId: fromNode.nodeId, toNodeId: toNode.nodeId, portType });
         state.canvas.add(path);
@@ -327,18 +405,25 @@
         return { line: path, arrow };
     }
 
-    function createArrow(x, y, portType) {
-        const color = portType === 'output-true' ? '#4ade80' :
-                      portType === 'output-false' ? '#f87171' :
-                      CONFIG.connection.stroke;
+    function createArrowFromSegment(points, color) {
+        const last = points[points.length - 1];
+        const prev = points[points.length - 2];
+        const dx = last.x - prev.x;
+        const dy = last.y - prev.y;
+        // angle: fabric Triangle at 0deg points up, so rotate to match segment direction
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+        // Position arrow slightly back from endpoint along the segment
+        const len = Math.sqrt(dx * dx + dy * dy);
+        const nx = len > 0 ? dx / len : 0;
+        const ny = len > 0 ? dy / len : 0;
 
         return new fabric.Triangle({
-            left: x,
-            top: y,
+            left: last.x - nx * 8,
+            top: last.y - ny * 8,
             width: 12,
             height: 10,
             fill: color,
-            angle: 180,
+            angle: angle,
             originX: 'center',
             originY: 'center',
             selectable: false,
@@ -371,7 +456,6 @@
             const toNode = state.nodes.get(conn.toNodeId);
 
             if (!fromNode || !toNode) {
-                // Remove orphaned connection
                 state.canvas.remove(conn.line);
                 state.canvas.remove(conn.arrow);
                 return;
@@ -379,16 +463,28 @@
 
             const fromPoint = getPortPosition(fromNode, conn.portType);
             const toPoint = getPortPosition(toNode, 'input');
-
             if (!fromPoint || !toPoint) return;
 
-            const midY = (fromPoint.y + toPoint.y) / 2;
-            const pathString =
-                `M ${fromPoint.x} ${fromPoint.y} ` +
-                `C ${fromPoint.x} ${midY}, ${toPoint.x} ${midY}, ${toPoint.x} ${toPoint.y}`;
+            const routePoints = buildOrthogonalRoute(fromPoint, toPoint, conn.portType);
+            const pathString = pointsToSvgPath(routePoints);
 
             conn.line.set({ path: fabric.util.parsePath(pathString) });
-            conn.arrow.set({ left: toPoint.x, top: toPoint.y - 10 });
+
+            // Update arrow position and angle
+            const last = routePoints[routePoints.length - 1];
+            const prev = routePoints[routePoints.length - 2];
+            const dx = last.x - prev.x;
+            const dy = last.y - prev.y;
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const nx = len > 0 ? dx / len : 0;
+            const ny = len > 0 ? dy / len : 0;
+
+            conn.arrow.set({
+                left: last.x - nx * 8,
+                top: last.y - ny * 8,
+                angle: angle
+            });
         });
 
         state.canvas.renderAll();
