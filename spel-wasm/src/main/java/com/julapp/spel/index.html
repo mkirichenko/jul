@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SpEL WASM Demo</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 20px;
+      background: #f5f5f5;
+      color: #222;
+    }
+    h1 { font-size: 1.6rem; margin-bottom: 4px; }
+    p.subtitle { color: #666; margin-top: 0; }
+    label { display: block; font-weight: 600; margin: 16px 0 4px; }
+    textarea, input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      font-family: monospace;
+      font-size: 0.95rem;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: #fff;
+    }
+    textarea { resize: vertical; }
+    button {
+      margin-top: 12px;
+      padding: 8px 24px;
+      font-size: 1rem;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover { background: #1d4ed8; }
+    #output {
+      margin-top: 16px;
+      padding: 12px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      border-radius: 4px;
+      font-family: monospace;
+      min-height: 2em;
+      white-space: pre-wrap;
+    }
+    .status { margin-top: 8px; font-size: 0.85rem; }
+    .status.ok    { color: #16a34a; }
+    .status.error { color: #dc2626; }
+    details { margin-top: 24px; }
+    summary { cursor: pointer; font-weight: 600; }
+    table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+    td, th {
+      border: 1px solid #ddd;
+      padding: 6px 10px;
+      text-align: left;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+    th { background: #e5e7eb; }
+  </style>
+</head>
+<body>
+  <h1>SpEL WASM Demo</h1>
+  <p class="subtitle">
+    Spring Expression Language subset running in WebAssembly via J2WASM.
+    Compiled from Java — no JavaScript expression parser.
+  </p>
+
+  <label for="expression">Expression</label>
+  <input type="text" id="expression"
+         value="name + ' is ' + age + ' years old'"
+         placeholder="e.g. name + ' is ' + age + ' years old'">
+
+  <label for="context">Context (JSON)</label>
+  <textarea id="context" rows="4">{"name": "Alice", "age": 30, "active": true}</textarea>
+
+  <button id="evaluate-btn">Evaluate</button>
+
+  <div id="output">— result will appear here —</div>
+  <div id="status" class="status">Loading WASM module…</div>
+
+  <!-- ------------------------------------------------------------------ -->
+  <!-- Quick-reference examples                                            -->
+  <!-- ------------------------------------------------------------------ -->
+  <details>
+    <summary>Expression examples</summary>
+    <table>
+      <tr><th>Expression</th><th>Context</th><th>Result</th></tr>
+      <tr><td>2 + 2 * 3</td><td>{}</td><td>8</td></tr>
+      <tr><td>'hello' + ' ' + 'world'</td><td>{}</td><td>hello world</td></tr>
+      <tr><td>age >= 18 ? 'adult' : 'minor'</td><td>{"age":20}</td><td>adult</td></tr>
+      <tr><td>name + ' (' + active + ')'</td><td>{"name":"Bob","active":false}</td><td>Bob (false)</td></tr>
+      <tr><td>!active &amp;&amp; age &lt; 18</td><td>{"active":false,"age":15}</td><td>true</td></tr>
+      <tr><td>"Hello ${name}!"</td><td>{"name":"World"}</td><td>Hello World!</td></tr>
+    </table>
+  </details>
+
+  <!--
+    The bundled JS produced by j2cl_application is injected here by the dev server.
+    In production a <script src="..."> tag pointing at the Closure-compiled bundle
+    would be used instead.
+  -->
+</body>
+</html>

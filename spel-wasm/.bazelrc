@@ -1,0 +1,26 @@
+# Recommended Bazel settings for J2CL / J2WASM development.
+# Copy this file to your workspace root.
+
+# Use workers for faster incremental builds
+build --strategy=J2cl=worker
+build --strategy=J2wasm=worker
+build --strategy=Closure=worker
+build --strategy=Javac=worker
+build --strategy=JavaIjar=local
+build --strategy=JavaDeployJar=local
+build --strategy=JavaSourceJar=local
+
+# macOS workaround for paths with spaces (safe to keep on Linux too)
+build --experimental_inprocess_symlink_creation
+
+# Java 21
+build --java_language_version=21
+build --java_runtime_version=21
+build --tool_java_language_version=21
+build --tool_java_runtime_version=21
+
+# Only print test output on failure
+test --test_output=errors
+
+# Watch the filesystem for changes (enables ibazel)
+build --watchfs
