@@ -13,7 +13,7 @@
         canvas: {
             width: 1000,
             height: 700,
-            backgroundColor: '#232946'
+            backgroundColor: 'rgba(35, 41, 70, 0.95)'
         },
         grid: {
             size: 20,
@@ -28,25 +28,37 @@
             start: {
                 width: 80,
                 height: 80,
-                fill: '#4ade80',
+                fill: 'rgba(74, 222, 128, 0.25)',
+                stroke: 'rgba(74, 222, 128, 0.6)',
+                glowColor: 'rgba(74, 222, 128, 0.5)',
+                accentColor: '#4ade80',
                 shape: 'circle'
             },
             action: {
                 width: 160,
                 height: 80,
-                fill: '#60a5fa',
+                fill: 'rgba(96, 165, 250, 0.2)',
+                stroke: 'rgba(96, 165, 250, 0.5)',
+                glowColor: 'rgba(96, 165, 250, 0.4)',
+                accentColor: '#60a5fa',
                 shape: 'rect'
             },
             condition: {
                 width: 100,
                 height: 100,
-                fill: '#fbbf24',
+                fill: 'rgba(251, 191, 36, 0.2)',
+                stroke: 'rgba(251, 191, 36, 0.5)',
+                glowColor: 'rgba(251, 191, 36, 0.4)',
+                accentColor: '#fbbf24',
                 shape: 'diamond'
             },
             end: {
                 width: 80,
                 height: 80,
-                fill: '#f87171',
+                fill: 'rgba(248, 113, 113, 0.25)',
+                stroke: 'rgba(248, 113, 113, 0.6)',
+                glowColor: 'rgba(248, 113, 113, 0.5)',
+                accentColor: '#f87171',
                 shape: 'circle'
             }
         },
@@ -117,134 +129,163 @@
     }
 
     // ============================================
-    // Node Creation
+    // Node Creation - Glass Style
     // ============================================
+    function createGlassShape(config) {
+        const glowShadow = new fabric.Shadow({
+            color: config.glowColor,
+            blur: 20,
+            offsetX: 0,
+            offsetY: 0
+        });
+
+        const shapeProps = {
+            fill: config.fill,
+            stroke: config.stroke,
+            strokeWidth: 2,
+            shadow: glowShadow,
+            originX: 'center',
+            originY: 'center'
+        };
+
+        switch (config.shape) {
+            case 'circle':
+                return new fabric.Circle({
+                    ...shapeProps,
+                    radius: config.width / 2
+                });
+            case 'diamond':
+                return new fabric.Rect({
+                    ...shapeProps,
+                    width: config.width * 0.7,
+                    height: config.height * 0.7,
+                    angle: 45
+                });
+            case 'rect':
+            default:
+                return new fabric.Rect({
+                    ...shapeProps,
+                    width: config.width,
+                    height: config.height,
+                    rx: 12,
+                    ry: 12
+                });
+        }
+    }
+
+    function createHighlight(config) {
+        // Inner highlight for glass reflection effect
+        const highlightProps = {
+            fill: 'rgba(255, 255, 255, 0.15)',
+            stroke: '',
+            originX: 'center',
+            originY: 'center'
+        };
+
+        switch (config.shape) {
+            case 'circle':
+                return new fabric.Ellipse({
+                    ...highlightProps,
+                    rx: config.width / 3,
+                    ry: config.width / 6,
+                    top: -config.height / 6
+                });
+            case 'diamond':
+                return new fabric.Rect({
+                    ...highlightProps,
+                    width: config.width * 0.35,
+                    height: config.height * 0.15,
+                    rx: 4,
+                    ry: 4,
+                    angle: 45,
+                    top: -config.height / 5
+                });
+            case 'rect':
+            default:
+                return new fabric.Rect({
+                    ...highlightProps,
+                    width: config.width - 20,
+                    height: 8,
+                    rx: 4,
+                    ry: 4,
+                    top: -config.height / 2 + 12
+                });
+        }
+    }
+
+    function createGlassPort(x, y, color, portType) {
+        return new fabric.Circle({
+            radius: 7,
+            fill: color,
+            stroke: 'rgba(255, 255, 255, 0.3)',
+            strokeWidth: 2,
+            originX: 'center',
+            originY: 'center',
+            left: x,
+            top: y,
+            portType: portType,
+            selectable: false,
+            shadow: new fabric.Shadow({
+                color: color,
+                blur: 8,
+                offsetX: 0,
+                offsetY: 0
+            })
+        });
+    }
+
     function createNode(type, x, y) {
         const config = CONFIG.nodes[type];
         if (!config) return null;
 
         const nodeId = `node_${state.nodeIdCounter++}`;
-        let shape;
-        let labelOffsetY = 0;
 
-        switch (config.shape) {
-            case 'circle':
-                shape = new fabric.Circle({
-                    radius: config.width / 2,
-                    fill: config.fill,
-                    originX: 'center',
-                    originY: 'center'
-                });
-                break;
+        // Create main glass shape
+        const shape = createGlassShape(config);
 
-            case 'diamond':
-                shape = new fabric.Rect({
-                    width: config.width * 0.7,
-                    height: config.height * 0.7,
-                    fill: config.fill,
-                    angle: 45,
-                    originX: 'center',
-                    originY: 'center'
-                });
-                break;
+        // Create inner highlight
+        const highlight = createHighlight(config);
 
-            case 'rect':
-            default:
-                shape = new fabric.Rect({
-                    width: config.width,
-                    height: config.height,
-                    fill: config.fill,
-                    rx: 8,
-                    ry: 8,
-                    originX: 'center',
-                    originY: 'center'
-                });
-                break;
-        }
-
-        // Create label
+        // Create label with light text for glass
         const label = new fabric.Text(getDefaultLabel(type), {
             fontSize: 14,
-            fill: '#1a1a2e',
+            fill: 'rgba(255, 255, 255, 0.95)',
             fontFamily: 'sans-serif',
             fontWeight: 'bold',
             originX: 'center',
             originY: 'center',
-            top: labelOffsetY
+            top: 0,
+            shadow: new fabric.Shadow({
+                color: 'rgba(0, 0, 0, 0.5)',
+                blur: 2,
+                offsetX: 0,
+                offsetY: 1
+            })
         });
 
-        // Create input port (top)
-        const inputPort = new fabric.Circle({
-            radius: 6,
-            fill: '#60a5fa',
-            stroke: '#1a1a2e',
-            strokeWidth: 2,
-            originX: 'center',
-            originY: 'center',
-            top: -config.height / 2 - 6,
-            portType: 'input',
-            selectable: false
-        });
+        // Group items: shape first, then highlight, then label
+        const groupItems = [shape, highlight, label];
 
-        // Create output port (bottom)
-        const outputPort = new fabric.Circle({
-            radius: 6,
-            fill: '#60a5fa',
-            stroke: '#1a1a2e',
-            strokeWidth: 2,
-            originX: 'center',
-            originY: 'center',
-            top: config.height / 2 + 6,
-            portType: 'output',
-            selectable: false
-        });
+        // Create ports
+        const portOffset = config.shape === 'diamond' ? 10 : 6;
 
-        // Adjust ports for diamond shape
-        if (config.shape === 'diamond') {
-            inputPort.set({ top: -config.height / 2 - 10 });
-            outputPort.set({ top: config.height / 2 + 10 });
-        }
-
-        // Group all elements
-        const groupItems = [shape, label];
-
-        // Start nodes don't have input ports, End nodes don't have output ports
+        // Input port (top) - not for start nodes
         if (type !== 'start') {
+            const inputPort = createGlassPort(0, -config.height / 2 - portOffset, config.accentColor, 'input');
             groupItems.push(inputPort);
         }
-        if (type !== 'end') {
-            groupItems.push(outputPort);
-        }
 
-        // Condition nodes have two output ports (true/false)
-        if (type === 'condition') {
-            const truePort = new fabric.Circle({
-                radius: 6,
-                fill: '#4ade80',
-                stroke: '#1a1a2e',
-                strokeWidth: 2,
-                originX: 'center',
-                originY: 'center',
-                left: config.width / 2 + 10,
-                top: 0,
-                portType: 'output-true',
-                selectable: false
-            });
-            const falsePort = new fabric.Circle({
-                radius: 6,
-                fill: '#f87171',
-                stroke: '#1a1a2e',
-                strokeWidth: 2,
-                originX: 'center',
-                originY: 'center',
-                left: -config.width / 2 - 10,
-                top: 0,
-                portType: 'output-false',
-                selectable: false
-            });
-            // Remove default output port for condition
-            groupItems.pop();
-            groupItems.push(truePort, falsePort);
+        // Output port (bottom) - not for end nodes
+        if (type !== 'end') {
+            if (type === 'condition') {
+                // Condition has true (right) and false (left) ports
+                const truePort = createGlassPort(config.width / 2 + 10, 0, '#4ade80', 'output-true');
+                const falsePort = createGlassPort(-config.width / 2 - 10, 0, '#f87171', 'output-false');
+                groupItems.push(truePort, falsePort);
+            } else {
+                const outputPort = createGlassPort(0, config.height / 2 + portOffset, config.accentColor, 'output');
+                groupItems.push(outputPort);
+            }
         }
 
         const node = new fabric.Group(groupItems, {
