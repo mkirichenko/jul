@@ -1,98 +1,181 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const canvas = new fabric.Canvas('canvas', {
-        width: 800,
-        height: 600,
-        backgroundColor: '#fff'
-    });
+    const CSS_WIDTH = 800;
+    const CSS_HEIGHT = 600;
 
-    const addRectBtn = document.getElementById('add-rect');
-    const connectModeBtn = document.getElementById('connect-mode');
-    let isConnectMode = false;
-    let selectedShapes = [];
-    let rectCounter = 0;
+    const canvasEl = document.getElementById('canvas');
+    const ctx = canvasEl.getContext('2d');
 
-    addRectBtn.addEventListener('click', () => {
-        const rect = new fabric.Rect({
-            left: 100 + (rectCounter % 5) * 120,
-            top: 100 + Math.floor(rectCounter / 5) * 120,
-            fill: 'red',
-            width: 100,
-            height: 100,
-            originX: 'left',
-            originY: 'top',
-            // Custom property to identify shapes
-            id: 'rect_' + rectCounter
-        });
-        canvas.add(rect);
-        rectCounter++;
-    });
+    const state = {
+        dpr: 1,
+        rects: [],
+        lines: [],
+        selected: null,
+        drag: null,
+        rectCounter: 0,
+        isConnectMode: false,
+        connectSelection: [],
+        rafId: null
+    };
 
-    window.connectRectsByIds = (id1, id2) => {
-        const rect1 = canvas.getObjects().find(obj => obj.id === id1);
-        const rect2 = canvas.getObjects().find(obj => obj.id === id2);
-
-        if (rect1 && rect2) {
-            const from = rect1.getCenterPoint();
-            const to = rect2.getCenterPoint();
-
-            const line = new fabric.Line([from.x, from.y, to.x, to.y], {
-                stroke: 'black',
-                strokeWidth: 2,
-                selectable: false,
-                evented: false,
-            });
-            canvas.add(line);
-            canvas.sendToBack(line);
-            canvas.renderAll();
-            return true;
-        }
-        return false;
+    function resizeCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+        state.dpr = dpr;
+        canvasEl.style.width = CSS_WIDTH + 'px';
+        canvasEl.style.height = CSS_HEIGHT + 'px';
+        canvasEl.width = Math.round(CSS_WIDTH * dpr);
+        canvasEl.height = Math.round(CSS_HEIGHT * dpr);
+        requestRender();
     }
 
+    function requestRender() {
+        if (state.rafId !== null) return;
+        state.rafId = requestAnimationFrame(() => {
+            state.rafId = null;
+            render();
+        });
+    }
+
+    function render() {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+        ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+
+        // Lines below rectangles
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        for (const l of state.lines) {
+            ctx.beginPath();
+            ctx.moveTo(l.x1, l.y1);
+            ctx.lineTo(l.x2, l.y2);
+            ctx.stroke();
+        }
+
+        for (const r of state.rects) {
+            ctx.fillStyle = r.fill;
+            ctx.fillRect(r.x, r.y, r.width, r.height);
+        }
+    }
+
+    function getCanvasPoint(e) {
+        const rect = canvasEl.getBoundingClientRect();
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+
+    function hitTest(x, y) {
+        for (let i = state.rects.length - 1; i >= 0; i--) {
+            const r = state.rects[i];
+            if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height) return r;
+        }
+        return null;
+    }
+
+    function rectCenter(r) {
+        return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    }
+
+    // ============================================
+    // UI hooks
+    // ============================================
+    const addRectBtn = document.getElementById('add-rect');
+    const connectModeBtn = document.getElementById('connect-mode');
+
+    addRectBtn.addEventListener('click', () => {
+        const rect = {
+            id: 'rect_' + state.rectCounter,
+            x: 100 + (state.rectCounter % 5) * 120,
+            y: 100 + Math.floor(state.rectCounter / 5) * 120,
+            width: 100,
+            height: 100,
+            fill: 'red'
+        };
+        state.rects.push(rect);
+        state.rectCounter++;
+        requestRender();
+    });
+
     connectModeBtn.addEventListener('click', () => {
-        isConnectMode = !isConnectMode;
-        if (isConnectMode) {
+        state.isConnectMode = !state.isConnectMode;
+        if (state.isConnectMode) {
             connectModeBtn.textContent = 'Exit Connect Mode';
-            canvas.selection = false; // Disable group selection
-            canvas.discardActiveObject();
+            state.connectSelection = [];
+            state.selected = null;
+            state.drag = null;
         } else {
             connectModeBtn.textContent = 'Connect';
-            selectedShapes = [];
-            canvas.selection = true;
+            for (const r of state.connectSelection) r.fill = 'red';
+            state.connectSelection = [];
         }
+        requestRender();
     });
 
-    canvas.on('mouse:down', (options) => {
-        if (isConnectMode && options.target && options.target.id.startsWith('rect_')) {
-            selectedShapes.push(options.target);
-            options.target.set('fill', 'blue'); // Highlight selected shape
-            canvas.renderAll();
+    canvasEl.addEventListener('mousedown', (e) => {
+        const p = getCanvasPoint(e);
+        const hit = hitTest(p.x, p.y);
 
-            if (selectedShapes.length === 2) {
-                const from = selectedShapes[0].getCenterPoint();
-                const to = selectedShapes[1].getCenterPoint();
+        if (state.isConnectMode) {
+            if (!hit) return;
+            state.connectSelection.push(hit);
+            hit.fill = 'blue';
+            requestRender();
 
-                const line = new fabric.Line([from.x, from.y, to.x, to.y], {
-                    stroke: 'black',
-                    strokeWidth: 2,
-                    selectable: false,
-                    evented: false,
-                });
-
-                canvas.add(line);
-                canvas.sendToBack(line);
-
-                // Reset colors
-                selectedShapes[0].set('fill', 'red');
-                selectedShapes[1].set('fill', 'red');
-
-                // Exit connect mode
-                isConnectMode = false;
+            if (state.connectSelection.length === 2) {
+                const [a, b] = state.connectSelection;
+                const from = rectCenter(a);
+                const to = rectCenter(b);
+                state.lines.push({ x1: from.x, y1: from.y, x2: to.x, y2: to.y });
+                a.fill = 'red';
+                b.fill = 'red';
+                state.isConnectMode = false;
                 connectModeBtn.textContent = 'Connect';
-                selectedShapes = [];
-                canvas.selection = true;
-                canvas.renderAll();
+                state.connectSelection = [];
+                requestRender();
             }
+            return;
+        }
+
+        if (hit) {
+            state.selected = hit;
+            state.drag = { rect: hit, offsetX: p.x - hit.x, offsetY: p.y - hit.y };
+            // Bring to front
+            const idx = state.rects.indexOf(hit);
+            if (idx !== -1) {
+                state.rects.splice(idx, 1);
+                state.rects.push(hit);
+            }
+            requestRender();
+        } else {
+            state.selected = null;
         }
     });
+
+    canvasEl.addEventListener('mousemove', (e) => {
+        if (!state.drag) return;
+        const p = getCanvasPoint(e);
+        state.drag.rect.x = p.x - state.drag.offsetX;
+        state.drag.rect.y = p.y - state.drag.offsetY;
+        requestRender();
+    });
+
+    const endDrag = () => { state.drag = null; };
+    canvasEl.addEventListener('mouseup', endDrag);
+    canvasEl.addEventListener('mouseleave', endDrag);
+
+    // ============================================
+    // Programmatic connect by id (preserves existing API)
+    // ============================================
+    window.connectRectsByIds = (id1, id2) => {
+        const r1 = state.rects.find(r => r.id === id1);
+        const r2 = state.rects.find(r => r.id === id2);
+        if (!r1 || !r2) return false;
+        const from = rectCenter(r1);
+        const to = rectCenter(r2);
+        state.lines.push({ x1: from.x, y1: from.y, x2: to.x, y2: to.y });
+        requestRender();
+        return true;
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 });

@@ -1,6 +1,6 @@
 /**
- * Workflow Editor - Built with Fabric.js
- * A visual editor for workflow automation
+ * Workflow Editor - native Canvas 2D
+ * Visual editor for workflow automation, rendered directly on <canvas>.
  */
 
 (function() {
@@ -26,8 +26,7 @@
         },
         nodes: {
             start: {
-                width: 80,
-                height: 80,
+                width: 80, height: 80,
                 fill: 'rgba(74, 222, 128, 0.25)',
                 stroke: 'rgba(74, 222, 128, 0.6)',
                 glowColor: 'rgba(74, 222, 128, 0.5)',
@@ -35,8 +34,7 @@
                 shape: 'circle'
             },
             action: {
-                width: 160,
-                height: 80,
+                width: 160, height: 80,
                 fill: 'rgba(96, 165, 250, 0.2)',
                 stroke: 'rgba(96, 165, 250, 0.5)',
                 glowColor: 'rgba(96, 165, 250, 0.4)',
@@ -44,8 +42,7 @@
                 shape: 'rect'
             },
             condition: {
-                width: 100,
-                height: 100,
+                width: 100, height: 100,
                 fill: 'rgba(251, 191, 36, 0.2)',
                 stroke: 'rgba(251, 191, 36, 0.5)',
                 glowColor: 'rgba(251, 191, 36, 0.4)',
@@ -53,8 +50,7 @@
                 shape: 'diamond'
             },
             end: {
-                width: 80,
-                height: 80,
+                width: 80, height: 80,
                 fill: 'rgba(248, 113, 113, 0.25)',
                 stroke: 'rgba(248, 113, 113, 0.6)',
                 glowColor: 'rgba(248, 113, 113, 0.5)',
@@ -64,254 +60,339 @@
         },
         connection: {
             stroke: '#60a5fa',
-            strokeWidth: 2,
-            hoverStroke: '#e94560'
+            strokeWidth: 2
+        },
+        selection: {
+            color: '#e94560',
+            activeColor: '#4ade80',
+            width: 2,
+            padding: 6
         }
     };
 
     // ============================================
-    // State Management
+    // State
     // ============================================
     const state = {
-        canvas: null,
-        nodes: new Map(),
-        connections: [],
+        canvasEl: null,
+        ctx: null,
+        dpr: 1,
+        viewport: { x: 0, y: 0, scale: 1 }, // world -> screen: screen = world * scale + translate
+        nodes: new Map(),      // id -> node
+        nodesOrder: [],        // rendering order (last = top)
+        connections: [],       // { fromNodeId, toNodeId, portType }
         nodeIdCounter: 0,
+        selectedNodeId: null,
         connectionMode: false,
-        connectionStart: null,
-        selectedNode: null,
-        zoomLevel: 1
+        connectionStartId: null,
+        drag: null,            // { nodeId, offsetX, offsetY, moved }
+        rafId: null
     };
 
     // ============================================
-    // Canvas Initialization
+    // Canvas setup + HiDPI
     // ============================================
     function initCanvas() {
-        state.canvas = new fabric.Canvas('workflow-canvas', {
-            width: CONFIG.canvas.width,
-            height: CONFIG.canvas.height,
-            backgroundColor: CONFIG.canvas.backgroundColor,
-            selection: true,
-            preserveObjectStacking: true
-        });
-
-        drawGrid();
+        state.canvasEl = document.getElementById('workflow-canvas');
+        state.ctx = state.canvasEl.getContext('2d');
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
         setupCanvasEvents();
+        requestRender();
     }
 
-    function drawGrid() {
+    function resizeCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+        const { width, height } = CONFIG.canvas;
+        state.dpr = dpr;
+        state.canvasEl.style.width = width + 'px';
+        state.canvasEl.style.height = height + 'px';
+        state.canvasEl.width = Math.round(width * dpr);
+        state.canvasEl.height = Math.round(height * dpr);
+        requestRender();
+    }
+
+    // ============================================
+    // Coordinate helpers
+    // ============================================
+    function screenToWorld(sx, sy) {
+        return {
+            x: (sx - state.viewport.x) / state.viewport.scale,
+            y: (sy - state.viewport.y) / state.viewport.scale
+        };
+    }
+
+    function getCanvasPoint(e) {
+        const rect = state.canvasEl.getBoundingClientRect();
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+
+    // ============================================
+    // Render loop
+    // ============================================
+    function requestRender() {
+        if (state.rafId !== null) return;
+        state.rafId = requestAnimationFrame(() => {
+            state.rafId = null;
+            render();
+        });
+    }
+
+    function render() {
+        const ctx = state.ctx;
+        const { dpr, viewport } = state;
+        const w = state.canvasEl.width;
+        const h = state.canvasEl.height;
+
+        // Clear in device space
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = CONFIG.canvas.backgroundColor;
+        ctx.fillRect(0, 0, w, h);
+
+        // World transform: combine DPR with viewport transform in one matrix
+        const s = dpr * viewport.scale;
+        ctx.setTransform(s, 0, 0, s, dpr * viewport.x, dpr * viewport.y);
+
+        drawGrid(ctx);
+
+        // Connections render beneath nodes
+        for (const conn of state.connections) drawConnection(ctx, conn);
+
+        for (const id of state.nodesOrder) {
+            const node = state.nodes.get(id);
+            if (node) drawNode(ctx, node);
+        }
+    }
+
+    // ============================================
+    // Grid
+    // ============================================
+    function drawGrid(ctx) {
         const { width, height } = CONFIG.canvas;
         const { size, color } = CONFIG.grid;
-
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1 / state.viewport.scale;
+        ctx.beginPath();
         for (let x = 0; x <= width; x += size) {
-            const line = new fabric.Line([x, 0, x, height], {
-                stroke: color,
-                strokeWidth: 1,
-                selectable: false,
-                evented: false,
-                excludeFromExport: true
-            });
-            state.canvas.add(line);
-            state.canvas.sendToBack(line);
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, height);
         }
-
         for (let y = 0; y <= height; y += size) {
-            const line = new fabric.Line([0, y, width, y], {
-                stroke: color,
-                strokeWidth: 1,
-                selectable: false,
-                evented: false,
-                excludeFromExport: true
-            });
-            state.canvas.add(line);
-            state.canvas.sendToBack(line);
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
         }
+        ctx.stroke();
     }
 
     // ============================================
-    // Node Creation - Glass Style
+    // Node drawing
     // ============================================
-    function createGlassShape(config) {
-        const glowShadow = new fabric.Shadow({
-            color: config.glowColor,
-            blur: 20,
-            offsetX: 0,
-            offsetY: 0
-        });
-
-        const shapeProps = {
-            fill: config.fill,
-            stroke: config.stroke,
-            strokeWidth: 2,
-            shadow: glowShadow,
-            originX: 'center',
-            originY: 'center'
-        };
-
-        switch (config.shape) {
+    function pathNodeShape(ctx, cfg) {
+        ctx.beginPath();
+        switch (cfg.shape) {
             case 'circle':
-                return new fabric.Circle({
-                    ...shapeProps,
-                    radius: config.width / 2
-                });
-            case 'diamond':
-                return new fabric.Rect({
-                    ...shapeProps,
-                    width: config.width * 0.7,
-                    height: config.height * 0.7,
-                    angle: 45
-                });
+                ctx.arc(0, 0, cfg.width / 2, 0, Math.PI * 2);
+                break;
+            case 'diamond': {
+                const d = (cfg.width * 0.7) / Math.SQRT2;
+                ctx.moveTo(0, -d);
+                ctx.lineTo(d, 0);
+                ctx.lineTo(0, d);
+                ctx.lineTo(-d, 0);
+                ctx.closePath();
+                break;
+            }
             case 'rect':
             default:
-                return new fabric.Rect({
-                    ...shapeProps,
-                    width: config.width,
-                    height: config.height,
-                    rx: 12,
-                    ry: 12
-                });
+                roundRectPath(ctx, -cfg.width / 2, -cfg.height / 2, cfg.width, cfg.height, 12);
+                break;
         }
     }
 
-    function createHighlight(config) {
-        // Inner highlight for glass reflection effect
-        const highlightProps = {
-            fill: 'rgba(255, 255, 255, 0.15)',
-            stroke: '',
-            originX: 'center',
-            originY: 'center'
-        };
-
-        switch (config.shape) {
+    function pathHighlight(ctx, cfg) {
+        ctx.beginPath();
+        switch (cfg.shape) {
             case 'circle':
-                return new fabric.Ellipse({
-                    ...highlightProps,
-                    rx: config.width / 3,
-                    ry: config.width / 6,
-                    top: -config.height / 6
-                });
-            case 'diamond':
-                return new fabric.Rect({
-                    ...highlightProps,
-                    width: config.width * 0.35,
-                    height: config.height * 0.15,
-                    rx: 4,
-                    ry: 4,
-                    angle: 45,
-                    top: -config.height / 5
-                });
+                ellipsePath(ctx, 0, -cfg.height / 6, cfg.width / 3, cfg.width / 6);
+                break;
+            case 'diamond': {
+                const w = cfg.width * 0.35;
+                const h = cfg.height * 0.15;
+                const cy = -cfg.height / 5;
+                ctx.save();
+                ctx.translate(0, cy);
+                ctx.rotate(Math.PI / 4);
+                roundRectPath(ctx, -w / 2, -h / 2, w, h, 4);
+                ctx.restore();
+                break;
+            }
             case 'rect':
-            default:
-                return new fabric.Rect({
-                    ...highlightProps,
-                    width: config.width - 20,
-                    height: 8,
-                    rx: 4,
-                    ry: 4,
-                    top: -config.height / 2 + 12
-                });
-        }
-    }
-
-    function createGlassPort(x, y, color, portType) {
-        return new fabric.Circle({
-            radius: 7,
-            fill: color,
-            stroke: 'rgba(255, 255, 255, 0.3)',
-            strokeWidth: 2,
-            originX: 'center',
-            originY: 'center',
-            left: x,
-            top: y,
-            portType: portType,
-            selectable: false,
-            shadow: new fabric.Shadow({
-                color: color,
-                blur: 8,
-                offsetX: 0,
-                offsetY: 0
-            })
-        });
-    }
-
-    function createNode(type, x, y) {
-        const config = CONFIG.nodes[type];
-        if (!config) return null;
-
-        const nodeId = `node_${state.nodeIdCounter++}`;
-
-        // Create main glass shape
-        const shape = createGlassShape(config);
-
-        // Create inner highlight
-        const highlight = createHighlight(config);
-
-        // Create label with light text for glass
-        const label = new fabric.Text(getDefaultLabel(type), {
-            fontSize: 14,
-            fill: 'rgba(255, 255, 255, 0.95)',
-            fontFamily: 'sans-serif',
-            fontWeight: 'bold',
-            originX: 'center',
-            originY: 'center',
-            top: 0,
-            shadow: new fabric.Shadow({
-                color: 'rgba(0, 0, 0, 0.5)',
-                blur: 2,
-                offsetX: 0,
-                offsetY: 1
-            })
-        });
-
-        // Group items: shape first, then highlight, then label
-        const groupItems = [shape, highlight, label];
-
-        // Create ports
-        const portOffset = config.shape === 'diamond' ? 10 : 6;
-
-        // Input port (top) - not for start nodes
-        if (type !== 'start') {
-            const inputPort = createGlassPort(0, -config.height / 2 - portOffset, config.accentColor, 'input');
-            groupItems.push(inputPort);
-        }
-
-        // Output port (bottom) - not for end nodes
-        if (type !== 'end') {
-            if (type === 'condition') {
-                // Condition has true (right) and false (left) ports
-                const truePort = createGlassPort(config.width / 2 + 10, 0, '#4ade80', 'output-true');
-                const falsePort = createGlassPort(-config.width / 2 - 10, 0, '#f87171', 'output-false');
-                groupItems.push(truePort, falsePort);
-            } else {
-                const outputPort = createGlassPort(0, config.height / 2 + portOffset, config.accentColor, 'output');
-                groupItems.push(outputPort);
+            default: {
+                const w = cfg.width - 20;
+                const h = 8;
+                const cy = -cfg.height / 2 + 12;
+                roundRectPath(ctx, -w / 2, cy - h / 2, w, h, 4);
+                break;
             }
         }
+    }
 
-        const node = new fabric.Group(groupItems, {
-            left: x,
-            top: y,
-            originX: 'center',
-            originY: 'center',
-            hasControls: false,
-            hasBorders: true,
-            borderColor: '#e94560',
-            borderScaleFactor: 2,
-            nodeId: nodeId,
-            nodeType: type,
-            nodeData: {
+    function drawNode(ctx, node) {
+        const cfg = CONFIG.nodes[node.type];
+        ctx.save();
+        ctx.translate(node.x, node.y);
+
+        // Main shape with glow
+        ctx.shadowColor = cfg.glowColor;
+        ctx.shadowBlur = 20;
+        ctx.fillStyle = cfg.fill;
+        pathNodeShape(ctx, cfg);
+        ctx.fill();
+        // Crisp stroke without shadow
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = cfg.stroke;
+        ctx.lineWidth = 2;
+        pathNodeShape(ctx, cfg);
+        ctx.stroke();
+
+        // Inner highlight
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        pathHighlight(ctx, cfg);
+        ctx.fill();
+
+        // Ports
+        drawNodePorts(ctx, node, cfg);
+
+        // Label
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 2;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 1;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(node.data.label || getDefaultLabel(node.type), 0, 0);
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+
+        // Selection / active-connection border
+        const isSelected = state.selectedNodeId === node.id;
+        const isConnStart = state.connectionStartId === node.id;
+        if (isSelected || isConnStart) {
+            ctx.strokeStyle = isConnStart ? CONFIG.selection.activeColor : CONFIG.selection.color;
+            ctx.lineWidth = CONFIG.selection.width * 2;
+            pathSelectionBounds(ctx, cfg);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+
+    function drawNodePorts(ctx, node, cfg) {
+        const portOffset = cfg.shape === 'diamond' ? 10 : 6;
+        if (node.type !== 'start') {
+            drawPort(ctx, 0, -cfg.height / 2 - portOffset, cfg.accentColor);
+        }
+        if (node.type !== 'end') {
+            if (node.type === 'condition') {
+                drawPort(ctx, cfg.width / 2 + 10, 0, '#4ade80');
+                drawPort(ctx, -cfg.width / 2 - 10, 0, '#f87171');
+            } else {
+                drawPort(ctx, 0, cfg.height / 2 + portOffset, cfg.accentColor);
+            }
+        }
+    }
+
+    function drawPort(ctx, x, y, color) {
+        ctx.save();
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, y, 7, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function pathSelectionBounds(ctx, cfg) {
+        const p = CONFIG.selection.padding;
+        let w, h;
+        if (cfg.shape === 'circle') {
+            w = cfg.width + p * 2;
+            h = cfg.height + p * 2;
+        } else if (cfg.shape === 'diamond') {
+            // axis-aligned bbox around the rotated square's extent + port extent
+            const d = (cfg.width * 0.7) / Math.SQRT2;
+            w = d * 2 + p * 2;
+            h = d * 2 + p * 2;
+        } else {
+            w = cfg.width + p * 2;
+            h = cfg.height + p * 2;
+        }
+        ctx.beginPath();
+        ctx.rect(-w / 2, -h / 2, w, h);
+    }
+
+    // ============================================
+    // Path helpers
+    // ============================================
+    function roundRectPath(ctx, x, y, w, h, r) {
+        const rr = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+        ctx.moveTo(x + rr, y);
+        ctx.lineTo(x + w - rr, y);
+        ctx.arcTo(x + w, y, x + w, y + rr, rr);
+        ctx.lineTo(x + w, y + h - rr);
+        ctx.arcTo(x + w, y + h, x + w - rr, y + h, rr);
+        ctx.lineTo(x + rr, y + h);
+        ctx.arcTo(x, y + h, x, y + h - rr, rr);
+        ctx.lineTo(x, y + rr);
+        ctx.arcTo(x, y, x + rr, y, rr);
+        ctx.closePath();
+    }
+
+    function ellipsePath(ctx, cx, cy, rx, ry) {
+        if (typeof ctx.ellipse === 'function') {
+            ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        } else {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.scale(rx, ry);
+            ctx.arc(0, 0, 1, 0, Math.PI * 2);
+            ctx.restore();
+        }
+    }
+
+    // ============================================
+    // Node creation / management
+    // ============================================
+    function createNode(type, x, y) {
+        if (!CONFIG.nodes[type]) return null;
+        const id = `node_${state.nodeIdCounter++}`;
+        const node = {
+            id,
+            type,
+            x, y,
+            data: {
                 label: getDefaultLabel(type),
                 description: '',
                 actionType: type === 'action' ? 'http' : null,
                 condition: type === 'condition' ? '' : null
             }
-        });
-
-        state.nodes.set(nodeId, node);
-        state.canvas.add(node);
-        state.canvas.setActiveObject(node);
-        state.canvas.renderAll();
-
+        };
+        state.nodes.set(id, node);
+        state.nodesOrder.push(id);
+        selectNode(id);
+        requestRender();
         return node;
     }
 
@@ -325,71 +406,91 @@
         }
     }
 
+    function bringToFront(id) {
+        const idx = state.nodesOrder.indexOf(id);
+        if (idx === -1 || idx === state.nodesOrder.length - 1) return;
+        state.nodesOrder.splice(idx, 1);
+        state.nodesOrder.push(id);
+    }
+
     // ============================================
-    // Connection System - Orthogonal Routing
+    // Hit testing
     // ============================================
-    const ROUTE_STUB = 25; // minimum distance extending from a port
+    function hitTestNode(wx, wy) {
+        // Top-down: iterate in reverse z-order
+        for (let i = state.nodesOrder.length - 1; i >= 0; i--) {
+            const node = state.nodes.get(state.nodesOrder[i]);
+            if (!node) continue;
+            if (pointInNode(wx, wy, node)) return node;
+        }
+        return null;
+    }
+
+    function pointInNode(wx, wy, node) {
+        const cfg = CONFIG.nodes[node.type];
+        const dx = wx - node.x;
+        const dy = wy - node.y;
+        switch (cfg.shape) {
+            case 'circle': {
+                const r = cfg.width / 2;
+                return dx * dx + dy * dy <= r * r;
+            }
+            case 'diamond': {
+                const d = (cfg.width * 0.7) / Math.SQRT2;
+                return Math.abs(dx) + Math.abs(dy) <= d;
+            }
+            case 'rect':
+            default:
+                return Math.abs(dx) <= cfg.width / 2 && Math.abs(dy) <= cfg.height / 2;
+        }
+    }
+
+    // ============================================
+    // Connection routing (orthogonal)
+    // ============================================
+    const ROUTE_STUB = 25;
 
     function getPortDirection(portType) {
         switch (portType) {
-            case 'output':       return { dx: 0, dy: 1 };   // down
-            case 'output-true':  return { dx: 1, dy: 0 };   // right
-            case 'output-false': return { dx: -1, dy: 0 };  // left
-            case 'input':        return { dx: 0, dy: -1 };  // up
+            case 'output':       return { dx: 0, dy: 1 };
+            case 'output-true':  return { dx: 1, dy: 0 };
+            case 'output-false': return { dx: -1, dy: 0 };
+            case 'input':        return { dx: 0, dy: -1 };
             default:             return { dx: 0, dy: 1 };
         }
     }
 
     function buildOrthogonalRoute(from, to, fromPortType) {
         const dir = getPortDirection(fromPortType);
-        // Stub: short segment exiting the source port
         const stub = { x: from.x + dir.dx * ROUTE_STUB, y: from.y + dir.dy * ROUTE_STUB };
-        // Entry: short segment before entering the target port (always from above)
         const entry = { x: to.x, y: to.y - ROUTE_STUB };
-
         const points = [from, stub];
 
         if (dir.dy !== 0) {
-            // Exiting vertically (down from output port)
-            routeVerticalExit(points, stub, entry, from, to);
+            if (stub.y < entry.y) {
+                const midY = (stub.y + entry.y) / 2;
+                points.push({ x: stub.x, y: midY });
+                points.push({ x: entry.x, y: midY });
+            } else {
+                const detourX = from.x <= to.x
+                    ? Math.min(from.x, to.x) - 60
+                    : Math.max(from.x, to.x) + 60;
+                points.push({ x: detourX, y: stub.y });
+                points.push({ x: detourX, y: entry.y });
+            }
         } else {
-            // Exiting horizontally (left/right from condition ports)
-            routeHorizontalExit(points, stub, entry, dir);
+            const targetAhead = dir.dx > 0 ? stub.x < entry.x : stub.x > entry.x;
+            if (targetAhead) {
+                points.push({ x: entry.x, y: stub.y });
+            } else {
+                const midY = (stub.y + entry.y) / 2;
+                points.push({ x: stub.x, y: midY });
+                points.push({ x: entry.x, y: midY });
+            }
         }
 
         points.push(entry, to);
         return deduplicatePoints(points);
-    }
-
-    function routeVerticalExit(points, stub, entry, from, to) {
-        if (stub.y < entry.y) {
-            // Target is below - simple mid-level routing
-            const midY = (stub.y + entry.y) / 2;
-            points.push({ x: stub.x, y: midY });
-            points.push({ x: entry.x, y: midY });
-        } else {
-            // Target is above or same level - detour sideways
-            const detourX = from.x <= to.x
-                ? Math.min(from.x, to.x) - 60
-                : Math.max(from.x, to.x) + 60;
-            points.push({ x: detourX, y: stub.y });
-            points.push({ x: detourX, y: entry.y });
-        }
-    }
-
-    function routeHorizontalExit(points, stub, entry, dir) {
-        // Check if target x is "ahead" in exit direction
-        const targetAhead = dir.dx > 0 ? stub.x < entry.x : stub.x > entry.x;
-
-        if (targetAhead) {
-            // Target is in the direction we're heading - go to target x, then down
-            points.push({ x: entry.x, y: stub.y });
-        } else {
-            // Target is behind us - go vertically to midpoint, then across
-            const midY = (stub.y + entry.y) / 2;
-            points.push({ x: stub.x, y: midY });
-            points.push({ x: entry.x, y: midY });
-        }
     }
 
     function deduplicatePoints(points) {
@@ -398,12 +499,20 @@
         );
     }
 
-    function pointsToSvgPath(points) {
-        let d = `M ${points[0].x} ${points[0].y}`;
-        for (let i = 1; i < points.length; i++) {
-            d += ` L ${points[i].x} ${points[i].y}`;
+    function getPortPosition(node, portType) {
+        const cfg = CONFIG.nodes[node.type];
+        switch (portType) {
+            case 'input':
+                return { x: node.x, y: node.y - cfg.height / 2 - 6 };
+            case 'output':
+                return { x: node.x, y: node.y + cfg.height / 2 + 6 };
+            case 'output-true':
+                return { x: node.x + cfg.width / 2 + 10, y: node.y };
+            case 'output-false':
+                return { x: node.x - cfg.width / 2 - 10, y: node.y };
+            default:
+                return null;
         }
-        return d;
     }
 
     function getConnectionColor(portType) {
@@ -412,160 +521,187 @@
         return CONFIG.connection.stroke;
     }
 
-    function createConnection(fromNode, toNode, portType = 'output') {
-        const fromPoint = getPortPosition(fromNode, portType);
-        const toPoint = getPortPosition(toNode, 'input');
-        if (!fromPoint || !toPoint) return null;
+    function drawConnection(ctx, conn) {
+        const fromNode = state.nodes.get(conn.fromNodeId);
+        const toNode = state.nodes.get(conn.toNodeId);
+        if (!fromNode || !toNode) return;
 
-        const routePoints = buildOrthogonalRoute(fromPoint, toPoint, portType);
-        const pathString = pointsToSvgPath(routePoints);
-        const color = getConnectionColor(portType);
+        const from = getPortPosition(fromNode, conn.portType);
+        const to = getPortPosition(toNode, 'input');
+        if (!from || !to) return;
 
-        const path = new fabric.Path(pathString, {
-            stroke: color,
-            strokeWidth: CONFIG.connection.strokeWidth,
-            fill: '',
-            selectable: false,
-            evented: false,
-            fromNodeId: fromNode.nodeId,
-            toNodeId: toNode.nodeId,
-            portType: portType,
-            isConnection: true
-        });
+        const points = buildOrthogonalRoute(from, to, conn.portType);
+        const color = getConnectionColor(conn.portType);
 
-        // Arrow at end, oriented to match the last segment
-        const arrow = createArrowFromSegment(routePoints, color);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = CONFIG.connection.strokeWidth;
+        ctx.lineJoin = 'miter';
+        ctx.lineCap = 'butt';
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+        ctx.stroke();
 
-        state.connections.push({ line: path, arrow: arrow, fromNodeId: fromNode.nodeId, toNodeId: toNode.nodeId, portType });
-        state.canvas.add(path);
-        state.canvas.add(arrow);
-        state.canvas.sendToBack(path);
-        state.canvas.sendToBack(arrow);
-        state.canvas.renderAll();
-
-        return { line: path, arrow };
+        drawArrowHead(ctx, points, color);
     }
 
-    function createArrowFromSegment(points, color) {
+    function drawArrowHead(ctx, points, color) {
         const last = points[points.length - 1];
         const prev = points[points.length - 2];
         const dx = last.x - prev.x;
         const dy = last.y - prev.y;
-        // angle: fabric Triangle at 0deg points up, so rotate to match segment direction
-        const angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
-        // Position arrow slightly back from endpoint along the segment
-        const len = Math.sqrt(dx * dx + dy * dy);
-        const nx = len > 0 ? dx / len : 0;
-        const ny = len > 0 ? dy / len : 0;
-
-        return new fabric.Triangle({
-            left: last.x - nx * 8,
-            top: last.y - ny * 8,
-            width: 12,
-            height: 10,
-            fill: color,
-            angle: angle,
-            originX: 'center',
-            originY: 'center',
-            selectable: false,
-            evented: false,
-            isConnectionArrow: true
-        });
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = dx / len;
+        const ny = dy / len;
+        // Arrow: 12 wide, 10 tall; tip just shy of `last` so it sits outside the port visually
+        const tipX = last.x - nx * 3;
+        const tipY = last.y - ny * 3;
+        const baseX = tipX - nx * 10;
+        const baseY = tipY - ny * 10;
+        const px = -ny;
+        const py = nx;
+        const halfW = 6;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(tipX, tipY);
+        ctx.lineTo(baseX + px * halfW, baseY + py * halfW);
+        ctx.lineTo(baseX - px * halfW, baseY - py * halfW);
+        ctx.closePath();
+        ctx.fill();
     }
 
-    function getPortPosition(node, portType) {
-        const center = node.getCenterPoint();
-        const config = CONFIG.nodes[node.nodeType];
+    function createConnection(fromNode, toNode, portType = 'output') {
+        if (!fromNode || !toNode) return null;
+        const conn = {
+            fromNodeId: fromNode.id,
+            toNodeId: toNode.id,
+            portType
+        };
+        state.connections.push(conn);
+        requestRender();
+        return conn;
+    }
 
-        switch (portType) {
-            case 'input':
-                return { x: center.x, y: center.y - config.height / 2 - 6 };
-            case 'output':
-                return { x: center.x, y: center.y + config.height / 2 + 6 };
-            case 'output-true':
-                return { x: center.x + config.width / 2 + 10, y: center.y };
-            case 'output-false':
-                return { x: center.x - config.width / 2 - 10, y: center.y };
-            default:
-                return null;
+    // ============================================
+    // Selection
+    // ============================================
+    function selectNode(id) {
+        const changed = state.selectedNodeId !== id;
+        state.selectedNodeId = id;
+        if (id) bringToFront(id);
+        if (changed) {
+            if (id) showProperties(state.nodes.get(id));
+            else hideProperties();
+        }
+        requestRender();
+    }
+
+    function deselect() {
+        if (state.selectedNodeId !== null) {
+            state.selectedNodeId = null;
+            hideProperties();
+            requestRender();
         }
     }
 
-    function updateConnections() {
-        state.connections.forEach(conn => {
-            const fromNode = state.nodes.get(conn.fromNodeId);
-            const toNode = state.nodes.get(conn.toNodeId);
+    // ============================================
+    // Connection mode
+    // ============================================
+    function startConnectionMode(node) {
+        if (node.type === 'end') return;
+        state.connectionMode = true;
+        state.connectionStartId = node.id;
+        state.canvasEl.style.cursor = 'crosshair';
+        requestRender();
+    }
 
-            if (!fromNode || !toNode) {
-                state.canvas.remove(conn.line);
-                state.canvas.remove(conn.arrow);
-                return;
-            }
+    function completeConnection(toNode) {
+        const fromNode = state.nodes.get(state.connectionStartId);
+        if (!fromNode || !toNode) {
+            cancelConnectionMode();
+            return;
+        }
+        if (toNode.type === 'start' || toNode.id === fromNode.id) {
+            cancelConnectionMode();
+            return;
+        }
 
-            const fromPoint = getPortPosition(fromNode, conn.portType);
-            const toPoint = getPortPosition(toNode, 'input');
-            if (!fromPoint || !toPoint) return;
+        let portType = 'output';
+        if (fromNode.type === 'condition') {
+            portType = toNode.x >= fromNode.x ? 'output-true' : 'output-false';
+        }
+        createConnection(fromNode, toNode, portType);
+        cancelConnectionMode();
+    }
 
-            const routePoints = buildOrthogonalRoute(fromPoint, toPoint, conn.portType);
-            const pathString = pointsToSvgPath(routePoints);
-
-            conn.line.set({ path: fabric.util.parsePath(pathString) });
-
-            // Update arrow position and angle
-            const last = routePoints[routePoints.length - 1];
-            const prev = routePoints[routePoints.length - 2];
-            const dx = last.x - prev.x;
-            const dy = last.y - prev.y;
-            const angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
-            const len = Math.sqrt(dx * dx + dy * dy);
-            const nx = len > 0 ? dx / len : 0;
-            const ny = len > 0 ? dy / len : 0;
-
-            conn.arrow.set({
-                left: last.x - nx * 8,
-                top: last.y - ny * 8,
-                angle: angle
-            });
-        });
-
-        state.canvas.renderAll();
+    function cancelConnectionMode() {
+        state.connectionMode = false;
+        state.connectionStartId = null;
+        state.canvasEl.style.cursor = '';
+        requestRender();
     }
 
     // ============================================
-    // Event Handlers
+    // Canvas events
     // ============================================
     function setupCanvasEvents() {
-        // Object moving - update connections
-        state.canvas.on('object:moving', (e) => {
-            if (e.target && e.target.nodeId) {
-                updateConnections();
-            }
-        });
+        const el = state.canvasEl;
 
-        // Selection
-        state.canvas.on('selection:created', handleSelection);
-        state.canvas.on('selection:updated', handleSelection);
-        state.canvas.on('selection:cleared', handleDeselection);
+        el.addEventListener('mousedown', (e) => {
+            const p = getCanvasPoint(e);
+            const w = screenToWorld(p.x, p.y);
+            const node = hitTestNode(w.x, w.y);
 
-        // Double-click for connection mode
-        state.canvas.on('mouse:dblclick', (e) => {
-            if (e.target && e.target.nodeId) {
-                startConnectionMode(e.target);
-            }
-        });
-
-        // Click to complete connection
-        state.canvas.on('mouse:down', (e) => {
-            if (state.connectionMode && e.target && e.target.nodeId) {
-                if (e.target.nodeId !== state.connectionStart.nodeId) {
-                    completeConnection(e.target);
+            if (state.connectionMode) {
+                if (node && node.id !== state.connectionStartId) {
+                    completeConnection(node);
+                } else {
+                    cancelConnectionMode();
                 }
+                return;
+            }
+
+            if (node) {
+                selectNode(node.id);
+                state.drag = {
+                    nodeId: node.id,
+                    offsetX: w.x - node.x,
+                    offsetY: w.y - node.y,
+                    moved: false
+                };
+            } else {
+                deselect();
             }
         });
 
-        // Keyboard shortcuts
+        el.addEventListener('mousemove', (e) => {
+            if (!state.drag) return;
+            const p = getCanvasPoint(e);
+            const w = screenToWorld(p.x, p.y);
+            const node = state.nodes.get(state.drag.nodeId);
+            if (!node) { state.drag = null; return; }
+            node.x = w.x - state.drag.offsetX;
+            node.y = w.y - state.drag.offsetY;
+            state.drag.moved = true;
+            requestRender();
+        });
+
+        const endDrag = () => { state.drag = null; };
+        el.addEventListener('mouseup', endDrag);
+        el.addEventListener('mouseleave', endDrag);
+
+        el.addEventListener('dblclick', (e) => {
+            const p = getCanvasPoint(e);
+            const w = screenToWorld(p.x, p.y);
+            const node = hitTestNode(w.x, w.y);
+            if (node) startConnectionMode(node);
+        });
+
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Delete' || e.key === 'Backspace') {
+            const active = document.activeElement;
+            const tag = active && active.tagName;
+            const typing = tag === 'INPUT' || tag === 'TEXTAREA' || (active && active.isContentEditable);
+            if ((e.key === 'Delete' || e.key === 'Backspace') && !typing) {
                 deleteSelected();
             }
             if (e.key === 'Escape' && state.connectionMode) {
@@ -573,121 +709,58 @@
             }
         });
 
-        // Mouse wheel zoom
-        state.canvas.on('mouse:wheel', (opt) => {
-            const delta = opt.e.deltaY;
-            let zoom = state.canvas.getZoom();
-            zoom *= 0.999 ** delta;
-
-            // Clamp zoom level
+        el.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const p = getCanvasPoint(e);
+            const world = screenToWorld(p.x, p.y);
+            let zoom = state.viewport.scale * (0.999 ** e.deltaY);
             zoom = Math.min(Math.max(zoom, CONFIG.zoom.min), CONFIG.zoom.max);
-
-            // Zoom to mouse pointer position
-            state.canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
-            state.zoomLevel = zoom;
+            // Pin the same world point under the cursor
+            state.viewport.scale = zoom;
+            state.viewport.x = p.x - world.x * zoom;
+            state.viewport.y = p.y - world.y * zoom;
             updateZoomDisplay();
-
-            opt.e.preventDefault();
-            opt.e.stopPropagation();
-        });
+            requestRender();
+        }, { passive: false });
     }
 
     // ============================================
-    // Zoom Controls
+    // Zoom controls
     // ============================================
-    function zoomIn() {
-        let zoom = state.canvas.getZoom() + CONFIG.zoom.step;
-        zoom = Math.min(zoom, CONFIG.zoom.max);
-        const center = { x: CONFIG.canvas.width / 2, y: CONFIG.canvas.height / 2 };
-        state.canvas.zoomToPoint(center, zoom);
-        state.zoomLevel = zoom;
+    function zoomAtCenter(newScale) {
+        const cx = CONFIG.canvas.width / 2;
+        const cy = CONFIG.canvas.height / 2;
+        const world = screenToWorld(cx, cy);
+        state.viewport.scale = newScale;
+        state.viewport.x = cx - world.x * newScale;
+        state.viewport.y = cy - world.y * newScale;
         updateZoomDisplay();
+        requestRender();
+    }
+
+    function zoomIn() {
+        const z = Math.min(state.viewport.scale + CONFIG.zoom.step, CONFIG.zoom.max);
+        zoomAtCenter(z);
     }
 
     function zoomOut() {
-        let zoom = state.canvas.getZoom() - CONFIG.zoom.step;
-        zoom = Math.max(zoom, CONFIG.zoom.min);
-        const center = { x: CONFIG.canvas.width / 2, y: CONFIG.canvas.height / 2 };
-        state.canvas.zoomToPoint(center, zoom);
-        state.zoomLevel = zoom;
-        updateZoomDisplay();
+        const z = Math.max(state.viewport.scale - CONFIG.zoom.step, CONFIG.zoom.min);
+        zoomAtCenter(z);
     }
 
     function zoomReset() {
-        state.canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-        state.zoomLevel = 1;
+        state.viewport = { x: 0, y: 0, scale: 1 };
         updateZoomDisplay();
+        requestRender();
     }
 
     function updateZoomDisplay() {
         const display = document.getElementById('zoom-level');
-        if (display) {
-            display.textContent = Math.round(state.zoomLevel * 100) + '%';
-        }
-    }
-
-    function handleSelection(e) {
-        const selected = e.selected?.[0];
-        if (selected && selected.nodeId) {
-            state.selectedNode = selected;
-            showProperties(selected);
-        }
-    }
-
-    function handleDeselection() {
-        state.selectedNode = null;
-        hideProperties();
-    }
-
-    function startConnectionMode(node) {
-        // Don't allow connections from End nodes
-        if (node.nodeType === 'end') return;
-
-        state.connectionMode = true;
-        state.connectionStart = node;
-        state.canvas.defaultCursor = 'crosshair';
-        state.canvas.hoverCursor = 'crosshair';
-
-        // Visual feedback
-        node.set({ borderColor: '#4ade80' });
-        state.canvas.renderAll();
-    }
-
-    function completeConnection(toNode) {
-        // Don't allow connections to Start nodes
-        if (toNode.nodeType === 'start') {
-            cancelConnectionMode();
-            return;
-        }
-
-        const fromNode = state.connectionStart;
-
-        // Determine port type for condition nodes
-        let portType = 'output';
-        if (fromNode.nodeType === 'condition') {
-            // Simple heuristic: if target is to the right, use true port; else false
-            const fromCenter = fromNode.getCenterPoint();
-            const toCenter = toNode.getCenterPoint();
-            portType = toCenter.x >= fromCenter.x ? 'output-true' : 'output-false';
-        }
-
-        createConnection(fromNode, toNode, portType);
-        cancelConnectionMode();
-    }
-
-    function cancelConnectionMode() {
-        if (state.connectionStart) {
-            state.connectionStart.set({ borderColor: '#e94560' });
-        }
-        state.connectionMode = false;
-        state.connectionStart = null;
-        state.canvas.defaultCursor = 'default';
-        state.canvas.hoverCursor = 'move';
-        state.canvas.renderAll();
+        if (display) display.textContent = Math.round(state.viewport.scale * 100) + '%';
     }
 
     // ============================================
-    // Properties Panel
+    // Property panel
     // ============================================
     function showProperties(node) {
         const panel = document.getElementById('properties-panel');
@@ -698,199 +771,149 @@
 
         noSelection.style.display = 'none';
         form.style.display = 'flex';
+        conditionGroup.style.display = node.type === 'condition' ? 'flex' : 'none';
+        actionGroup.style.display = node.type === 'action' ? 'flex' : 'none';
 
-        // Show/hide type-specific fields
-        conditionGroup.style.display = node.nodeType === 'condition' ? 'flex' : 'none';
-        actionGroup.style.display = node.nodeType === 'action' ? 'flex' : 'none';
-
-        // Populate fields
-        document.getElementById('node-label').value = node.nodeData.label || '';
-        document.getElementById('node-description').value = node.nodeData.description || '';
-
-        if (node.nodeType === 'condition') {
-            document.getElementById('node-condition').value = node.nodeData.condition || '';
+        document.getElementById('node-label').value = node.data.label || '';
+        document.getElementById('node-description').value = node.data.description || '';
+        if (node.type === 'condition') {
+            document.getElementById('node-condition').value = node.data.condition || '';
         }
-        if (node.nodeType === 'action') {
-            document.getElementById('node-action-type').value = node.nodeData.actionType || 'http';
+        if (node.type === 'action') {
+            document.getElementById('node-action-type').value = node.data.actionType || 'http';
         }
     }
 
     function hideProperties() {
         const panel = document.getElementById('properties-panel');
-        const noSelection = panel.querySelector('.no-selection');
-        const form = panel.querySelector('.properties-form');
-
-        noSelection.style.display = 'block';
-        form.style.display = 'none';
+        panel.querySelector('.no-selection').style.display = 'block';
+        panel.querySelector('.properties-form').style.display = 'none';
     }
 
     function setupPropertyListeners() {
         document.getElementById('node-label').addEventListener('input', (e) => {
-            if (state.selectedNode) {
-                state.selectedNode.nodeData.label = e.target.value;
-                updateNodeLabel(state.selectedNode, e.target.value);
-            }
+            const node = state.nodes.get(state.selectedNodeId);
+            if (!node) return;
+            node.data.label = e.target.value;
+            requestRender();
         });
 
         document.getElementById('node-description').addEventListener('input', (e) => {
-            if (state.selectedNode) {
-                state.selectedNode.nodeData.description = e.target.value;
-            }
+            const node = state.nodes.get(state.selectedNodeId);
+            if (!node) return;
+            node.data.description = e.target.value;
         });
 
         document.getElementById('node-condition').addEventListener('input', (e) => {
-            if (state.selectedNode && state.selectedNode.nodeType === 'condition') {
-                state.selectedNode.nodeData.condition = e.target.value;
-            }
+            const node = state.nodes.get(state.selectedNodeId);
+            if (node && node.type === 'condition') node.data.condition = e.target.value;
         });
 
         document.getElementById('node-action-type').addEventListener('change', (e) => {
-            if (state.selectedNode && state.selectedNode.nodeType === 'action') {
-                state.selectedNode.nodeData.actionType = e.target.value;
-            }
+            const node = state.nodes.get(state.selectedNodeId);
+            if (node && node.type === 'action') node.data.actionType = e.target.value;
         });
     }
 
-    function updateNodeLabel(node, newLabel) {
-        const textObj = node.getObjects().find(obj => obj.type === 'text');
-        if (textObj) {
-            textObj.set({ text: newLabel || getDefaultLabel(node.nodeType) });
-            state.canvas.renderAll();
-        }
-    }
-
     // ============================================
-    // Toolbar Actions
+    // Toolbar actions
     // ============================================
     function deleteSelected() {
-        const activeObj = state.canvas.getActiveObject();
-        if (!activeObj || !activeObj.nodeId) return;
-
-        const nodeId = activeObj.nodeId;
-
-        // Remove connections associated with this node
-        state.connections = state.connections.filter(conn => {
-            if (conn.fromNodeId === nodeId || conn.toNodeId === nodeId) {
-                state.canvas.remove(conn.line);
-                state.canvas.remove(conn.arrow);
-                return false;
-            }
-            return true;
-        });
-
-        // Remove node
-        state.nodes.delete(nodeId);
-        state.canvas.remove(activeObj);
-        state.canvas.discardActiveObject();
-        state.canvas.renderAll();
+        const id = state.selectedNodeId;
+        if (!id) return;
+        state.connections = state.connections.filter(c => c.fromNodeId !== id && c.toNodeId !== id);
+        state.nodes.delete(id);
+        state.nodesOrder = state.nodesOrder.filter(n => n !== id);
+        state.selectedNodeId = null;
         hideProperties();
+        requestRender();
     }
 
     function clearCanvas() {
         if (!confirm('Are you sure you want to clear the entire canvas?')) return;
-
-        // Remove all nodes and connections
-        state.nodes.forEach((node) => {
-            state.canvas.remove(node);
-        });
-        state.connections.forEach(conn => {
-            state.canvas.remove(conn.line);
-            state.canvas.remove(conn.arrow);
-        });
-
         state.nodes.clear();
+        state.nodesOrder = [];
         state.connections = [];
         state.nodeIdCounter = 0;
-        state.canvas.renderAll();
+        state.selectedNodeId = null;
         hideProperties();
+        requestRender();
     }
 
     // ============================================
-    // Drag and Drop from Palette
+    // Drag-and-drop from palette
     // ============================================
     function setupDragAndDrop() {
         const paletteItems = document.querySelectorAll('.palette-item');
         const canvasWrapper = document.querySelector('.canvas-wrapper');
 
         paletteItems.forEach(item => {
+            item.setAttribute('draggable', 'true');
             item.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('nodeType', item.dataset.nodeType);
             });
-
-            // Also support click to add
             item.addEventListener('click', () => {
                 const type = item.dataset.nodeType;
-                const centerX = CONFIG.canvas.width / 2;
-                const centerY = CONFIG.canvas.height / 2;
-                createNode(type, centerX + (Math.random() - 0.5) * 200, centerY + (Math.random() - 0.5) * 200);
+                const cx = CONFIG.canvas.width / 2;
+                const cy = CONFIG.canvas.height / 2;
+                const world = screenToWorld(cx, cy);
+                createNode(type, world.x + (Math.random() - 0.5) * 200, world.y + (Math.random() - 0.5) * 200);
             });
         });
 
-        // Make palette items draggable
-        paletteItems.forEach(item => {
-            item.setAttribute('draggable', 'true');
-        });
-
-        // Handle drop on canvas
-        canvasWrapper.addEventListener('dragover', (e) => {
-            e.preventDefault();
-        });
-
+        canvasWrapper.addEventListener('dragover', (e) => e.preventDefault());
         canvasWrapper.addEventListener('drop', (e) => {
             e.preventDefault();
-            const nodeType = e.dataTransfer.getData('nodeType');
-            if (!nodeType) return;
-
-            const rect = state.canvas.getElement().getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            createNode(nodeType, x, y);
+            const type = e.dataTransfer.getData('nodeType');
+            if (!type) return;
+            const rect = state.canvasEl.getBoundingClientRect();
+            const sx = e.clientX - rect.left;
+            const sy = e.clientY - rect.top;
+            const world = screenToWorld(sx, sy);
+            createNode(type, world.x, world.y);
         });
     }
 
     // ============================================
-    // Initialization
+    // Init
     // ============================================
     function init() {
         initCanvas();
         setupDragAndDrop();
         setupPropertyListeners();
 
-        // Toolbar buttons
         document.getElementById('btn-delete').addEventListener('click', deleteSelected);
         document.getElementById('btn-clear').addEventListener('click', clearCanvas);
-
-        // Zoom buttons
         document.getElementById('btn-zoom-in').addEventListener('click', zoomIn);
         document.getElementById('btn-zoom-out').addEventListener('click', zoomOut);
         document.getElementById('btn-zoom-reset').addEventListener('click', zoomReset);
 
-        // Create a sample workflow
         createSampleWorkflow();
     }
 
     function createSampleWorkflow() {
-        // Create some initial nodes for demonstration
         const startNode = createNode('start', 500, 80);
         const actionNode = createNode('action', 500, 220);
         const conditionNode = createNode('condition', 500, 380);
         const action2Node = createNode('action', 700, 520);
         const endNode = createNode('end', 300, 520);
 
-        // Connect them
-        setTimeout(() => {
-            createConnection(startNode, actionNode);
-            createConnection(actionNode, conditionNode);
-            createConnection(conditionNode, action2Node, 'output-true');
-            createConnection(conditionNode, endNode, 'output-false');
-        }, 100);
+        createConnection(startNode, actionNode);
+        createConnection(actionNode, conditionNode);
+        createConnection(conditionNode, action2Node, 'output-true');
+        createConnection(conditionNode, endNode, 'output-false');
+
+        // Clear initial selection so the user starts fresh
+        state.selectedNodeId = null;
+        hideProperties();
+        requestRender();
     }
 
-    // Start the editor when DOM is ready
     document.addEventListener('DOMContentLoaded', init);
 
-    // Expose API for external use
+    // ============================================
+    // Public API
+    // ============================================
     window.WorkflowEditor = {
         createNode,
         createConnection,
@@ -899,15 +922,15 @@
         zoomIn,
         zoomOut,
         zoomReset,
-        getZoom: () => state.zoomLevel,
+        getZoom: () => state.viewport.scale,
         getNodes: () => Array.from(state.nodes.values()),
-        getConnections: () => state.connections,
+        getConnections: () => state.connections.slice(),
         exportWorkflow: () => ({
-            nodes: Array.from(state.nodes.entries()).map(([id, node]) => ({
-                id,
-                type: node.nodeType,
-                position: { x: node.left, y: node.top },
-                data: node.nodeData
+            nodes: Array.from(state.nodes.values()).map(n => ({
+                id: n.id,
+                type: n.type,
+                position: { x: n.x, y: n.y },
+                data: n.data
             })),
             connections: state.connections.map(c => ({
                 from: c.fromNodeId,
