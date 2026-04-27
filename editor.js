@@ -13,7 +13,7 @@
         canvas: {
             width: 1000,
             height: 700,
-            backgroundColor: 'rgba(35, 41, 70, 0.95)'
+            backgroundColor: 'rgba(35, 41, 70, 1.0)'
         },
         grid: {
             size: 20,
@@ -172,14 +172,22 @@
         const { size, color } = CONFIG.grid;
         ctx.strokeStyle = color;
         ctx.lineWidth = 1 / state.viewport.scale;
+
+        const topLeft = screenToWorld(0, 0);
+        const bottomRight = screenToWorld(width, height);
+        const startX = Math.ceil(topLeft.x / size) * size;
+        const endX = Math.ceil(bottomRight.x / size) * size;
+        const startY = Math.ceil(topLeft.y / size) * size;
+        const endY = Math.ceil(bottomRight.y / size) * size;
+
         ctx.beginPath();
-        for (let x = 0; x <= width; x += size) {
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, height);
+        for (let x = startX; x <= endX; x += size) {
+            ctx.moveTo(x, startY);
+            ctx.lineTo(x, endY);
         }
-        for (let y = 0; y <= height; y += size) {
-            ctx.moveTo(0, y);
-            ctx.lineTo(width, y);
+        for (let y = startY; y <= endY; y += size) {
+            ctx.moveTo(startX, y);
+            ctx.lineTo(endX, y);
         }
         ctx.stroke();
     }
