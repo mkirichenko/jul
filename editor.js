@@ -701,11 +701,28 @@
             const active = document.activeElement;
             const tag = active && active.tagName;
             const typing = tag === 'INPUT' || tag === 'TEXTAREA' || (active && active.isContentEditable);
-            if ((e.key === 'Delete' || e.key === 'Backspace') && !typing) {
+            if (typing) return;
+
+            if (e.key === 'Delete' || e.key === 'Backspace') {
                 deleteSelected();
+                return;
             }
             if (e.key === 'Escape' && state.connectionMode) {
                 cancelConnectionMode();
+                return;
+            }
+
+            const step = e.shiftKey ? 100 : 30;
+            let dx = 0, dy = 0;
+            if (e.key === 'ArrowLeft')  dx =  step;
+            if (e.key === 'ArrowRight') dx = -step;
+            if (e.key === 'ArrowUp')    dy =  step;
+            if (e.key === 'ArrowDown')  dy = -step;
+            if (dx || dy) {
+                state.viewport.x += dx;
+                state.viewport.y += dy;
+                e.preventDefault();
+                requestRender();
             }
         });
 
