@@ -571,16 +571,27 @@
         return CONFIG.connection.stroke;
     }
 
-    function drawConnection(ctx, conn) {
+    function recomputeConnectionRoute(conn) {
         const fromNode = state.nodes.get(conn.fromNodeId);
         const toNode = state.nodes.get(conn.toNodeId);
-        if (!fromNode || !toNode) return;
-
+        if (!fromNode || !toNode) { conn.points = null; return; }
         const from = getPortPosition(fromNode, conn.portType);
         const to = getPortPosition(toNode, 'input');
-        if (!from || !to) return;
+        if (!from || !to) { conn.points = null; return; }
+        conn.points = buildOrthogonalRoute(from, to, conn.portType);
+    }
 
-        const points = buildOrthogonalRoute(from, to, conn.portType);
+    function invalidateNodeRoutes(nodeId) {
+        for (const conn of state.connections) {
+            if (conn.fromNodeId === nodeId || conn.toNodeId === nodeId) {
+                recomputeConnectionRoute(conn);
+            }
+        }
+    }
+
+    function drawConnection(ctx, conn) {
+        const points = conn.points;
+        if (!points || points.length < 2) return;
         const color = getConnectionColor(conn.portType);
 
         ctx.strokeStyle = color;
@@ -625,9 +636,11 @@
         const conn = {
             fromNodeId: fromNode.id,
             toNodeId: toNode.id,
-            portType
+            portType,
+            points: null
         };
         state.connections.push(conn);
+        recomputeConnectionRoute(conn);
         requestRender();
         return conn;
     }
@@ -733,6 +746,7 @@
             node.x = w.x - state.drag.offsetX;
             node.y = w.y - state.drag.offsetY;
             state.drag.moved = true;
+            invalidateNodeRoutes(node.id);
             requestRender();
         });
 
