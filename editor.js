@@ -56,8 +56,17 @@
                 glowColor: 'rgba(248, 113, 113, 0.5)',
                 accentColor: '#f87171',
                 shape: 'circle'
+            },
+            input: {
+                width: 160, height: 70,
+                fill: 'rgba(167, 139, 250, 0.2)',
+                stroke: 'rgba(167, 139, 250, 0.55)',
+                glowColor: 'rgba(167, 139, 250, 0.45)',
+                accentColor: '#a78bfa',
+                shape: 'parallelogram'
             }
         },
+        parallelogram: { skew: 22 },
         connection: {
             stroke: '#60a5fa',
             strokeWidth: 2
@@ -210,6 +219,15 @@
                 ctx.closePath();
                 break;
             }
+            case 'parallelogram': {
+                const w = cfg.width, h = cfg.height, k = CONFIG.parallelogram.skew;
+                ctx.moveTo(-w / 2 + k, -h / 2);
+                ctx.lineTo(w / 2,     -h / 2);
+                ctx.lineTo(w / 2 - k,  h / 2);
+                ctx.lineTo(-w / 2,     h / 2);
+                ctx.closePath();
+                break;
+            }
             case 'rect':
             default:
                 roundRectPath(ctx, -cfg.width / 2, -cfg.height / 2, cfg.width, cfg.height, 12);
@@ -232,6 +250,18 @@
                 ctx.rotate(Math.PI / 4);
                 roundRectPath(ctx, -w / 2, -h / 2, w, h, 4);
                 ctx.restore();
+                break;
+            }
+            case 'parallelogram': {
+                const k = CONFIG.parallelogram.skew;
+                const w = cfg.width - 20 - k;
+                const h = 8;
+                const cy = -cfg.height / 2 + 12;
+                ctx.moveTo(-w / 2 + k / 2, cy - h / 2);
+                ctx.lineTo(w / 2 + k / 2,  cy - h / 2);
+                ctx.lineTo(w / 2 - k / 2,  cy + h / 2);
+                ctx.lineTo(-w / 2 - k / 2, cy + h / 2);
+                ctx.closePath();
                 break;
             }
             case 'rect':
@@ -351,6 +381,15 @@
         ctx.rect(-w / 2, -h / 2, w, h);
     }
 
+    function pointInParallelogram(dx, dy, cfg) {
+        const w = cfg.width, h = cfg.height, k = CONFIG.parallelogram.skew;
+        if (Math.abs(dy) > h / 2) return false;
+        const t = (dy + h / 2) / h; // 0 at top, 1 at bottom
+        const xLeft = -w / 2 + k * (1 - t);
+        const xRight = w / 2 - k * t;
+        return dx >= xLeft && dx <= xRight;
+    }
+
     // ============================================
     // Path helpers
     // ============================================
@@ -409,6 +448,7 @@
             case 'start': return 'Start';
             case 'action': return 'Action';
             case 'condition': return 'Condition';
+            case 'input': return 'Input';
             case 'end': return 'End';
             default: return 'Node';
         }
@@ -447,6 +487,8 @@
                 const d = (cfg.width * 0.7) / Math.SQRT2;
                 return Math.abs(dx) + Math.abs(dy) <= d;
             }
+            case 'parallelogram':
+                return pointInParallelogram(dx, dy, cfg);
             case 'rect':
             default:
                 return Math.abs(dx) <= cfg.width / 2 && Math.abs(dy) <= cfg.height / 2;
